@@ -31,10 +31,11 @@ line4 = top+25
 line5 = top+34
 line6 = top+43
 line7 = top+52
+brightness = 255 #Max
 # Move left to right keeping track of the current x position for drawing shapes.
 x = 0
 RST = 25
-CS = 8		
+CS = 8      
 DC = 24
 USER_I2C = 0
 #GPIO define
@@ -64,108 +65,285 @@ screensaver = 0
 serial = spi(device=0, port=0, bus_speed_hz = 8000000, transfer_size = 4096, gpio_DC = 24, gpio_RST = 25)
 device = sh1106(serial, rotate=2) #sh1106  
 def DisplayText(l1,l2,l3,l4,l5,l6,l7):
-	# simple routine to display 7 lines of text
-	with canvas(device) as draw:
-		draw.text((0, line1), l1,  font=font, fill=255)
-		draw.text((0, line2), l2, font=font, fill=255)
-		draw.text((0, line3), l3,  font=font, fill=255)
-		draw.text((0, line4), l4,  font=font, fill=255)
-		draw.text((0, line5), l5, font=font, fill=255)
-		draw.text((0, line6), l6, font=font, fill=255)
-		draw.text((0, line7), l7, font=font, fill=255)	
+    # simple routine to display 7 lines of text
+    with canvas(device) as draw:
+        draw.text((0, line1), l1,  font=font, fill=255)
+        draw.text((0, line2), l2, font=font, fill=255)
+        draw.text((0, line3), l3,  font=font, fill=255)
+        draw.text((0, line4), l4,  font=font, fill=255)
+        draw.text((0, line5), l5, font=font, fill=255)
+        draw.text((0, line6), l6, font=font, fill=255)
+        draw.text((0, line7), l7, font=font, fill=255)  
 
 #vars
 def switch_menu(argument):
     switcher = {
-		0: "_  P4wnP1 A.L.O.A",
+    0: "_  P4wnP1 A.L.O.A",
         1: "_SYSTEM COMMANDS",
         2: "_HID ATTACKS",
         3: "_WIFI SETTINGS",
         4: "_TRIGGERS FEATURES",
         5: "_TEMPLATES FEATURES",
         6: "_USB FEATURES",
-        7: "_July",
-        8: "_August",
-        9: "_September",
-        10: "_October",
-        11: "_November",
-        12: "_December",
-		13: "_END"
-    }
+        7: "_System information",
+        8: "_OLED contrast",
+        9: "_",
+        10: "_Display OFF",
+        11: "_Keys Test",
+        12: "_Reboot system",
+        13: "_System shutdown",
+        14: "_HID attacks",
+        15: "_",
+        16: "_",
+        17: "_",
+        18: "_",
+        19: "_",
+        20: "_",        
+        21: "_WIFI settings",
+        22: "_",
+        23: "_",
+        24: "_",
+        25: "_",
+        26: "_",
+        27: "_",
+        28: "_Trigger features",
+        29: "_",
+        30: "_",
+        31: "_",
+        32: "_",
+        33: "_",
+        34: "_",
+        35: "_Template features",
+        36: "_",
+        37: "_",
+        38: "_",
+        39: "_",
+        40: "_",
+        41: "_",
+        42: "_USB features",
+        43: "_",
+        44: "_",
+        45: "_",
+        46: "_",
+        47: "_",
+        48: "_"         
+}
     return switcher.get(argument, "Invalid")
-#menuprincipal = ['  .:: P4wnP1 A.L.O.A ::. ',' SYSTEM COMMANDS',' HID ATTACKS',' WIFI SETTINGS',' TRIGGERS FEATURES',' TEMPLATES FEATURES',' USB FEATURES']
+def about():
+    # simple sub routine to show an About
+    DisplayText(
+        "  : P4wnP1 A.L.O.A :",
+        "P4wnP1 (c) @Mame82",
+        "",
+        "This GUI is developed",
+        "       by BeBoX",
+        "contact :",
+        "depanet@gmail.com"
+        )
+    while GPIO.input(KEY_LEFT_PIN):
+        #wait
+        menu = 1
+    page = 0
+#system information sub routine
+def sysinfos():
+    while GPIO.input(KEY_LEFT_PIN):
+        now = datetime.datetime.now()
+        today_time = now.strftime("%H:%M:%S")
+        today_date = now.strftime("%d %b %y")
+        cmd = "hostname -I | cut -d\' \' -f1"
+        IP = subprocess.check_output(cmd, shell = True )
+        cmd = "hostname -I"
+        IP2 = subprocess.check_output(cmd, shell = True ).split(" ")[1]
+        IP3 = subprocess.check_output(cmd, shell = True ).split(" ")[2]
+        cmd = "top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'"
+        CPU = subprocess.check_output(cmd, shell = True )
+        cmd = "free -m | awk 'NR==2{printf \"Mem: %s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'"
+        MemUsage = subprocess.check_output(cmd, shell = True )
+        cmd = "df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'"
+        Disk = subprocess.check_output(cmd, shell = True )   
+        DisplayText(
+            "WIFI: " + str(IP),
+            str(CPU),
+            str(MemUsage),
+            str(Disk),
+            "BTH.: " + str(IP3),
+            "USB.: " + str(IP2),
+            today_date + " " + today_time
+            )
+    #page = 7
+def OLEDContrast(contrast):
+    #set contrast 0 to 255
+    while GPIO.input(KEY_LEFT_PIN):
+        #loop until press left to quit
+        with canvas(device) as draw:
+            if GPIO.input(KEY_UP_PIN): # button is released
+                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
+            else: # button is pressed:
+                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
+                    contrast = contrast +5
+                    if contrast>255:
+                        contrast = 255
+
+            if GPIO.input(KEY_DOWN_PIN): # button is released
+                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
+            else: # button is pressed:
+                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
+                    contrast = contrast-5
+                    if contrast<0:
+                        contrast = 0
+            device.contrast(contrast)
+            draw.text((64, line4), "Value : " + str(contrast),  font=font, fill=255)
+    return(contrast)
+def SreenOFF():
+    #put screen off until press left
+    while GPIO.input(KEY_LEFT_PIN):
+        device.hide()
+    device.show()
+def KeyTest():
+    while GPIO.input(KEY_LEFT_PIN):
+        with canvas(device) as draw:
+            if GPIO.input(KEY_UP_PIN): # button is released
+                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
+            else: # button is pressed:
+                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
+
+            if GPIO.input(KEY_LEFT_PIN): # button is released
+                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=0)  #left
+            else: # button is pressed:
+                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=1)  #left filled
+
+            if GPIO.input(KEY_RIGHT_PIN): # button is released
+                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=0) #right
+            else: # button is pressed:
+                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=1) #right filled
+
+            if GPIO.input(KEY_DOWN_PIN): # button is released
+                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
+            else: # button is pressed:
+                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
+
+            if GPIO.input(KEY_PRESS_PIN): # button is released
+                    draw.rectangle((20, 22,40,40), outline=255, fill=0) #center 
+            else: # button is pressed:
+                    draw.rectangle((20, 22,40,40), outline=255, fill=1) #center filled
+
+            if GPIO.input(KEY1_PIN): # button is released
+                    draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
+            else: # button is pressed:
+                    draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
+
+            if GPIO.input(KEY2_PIN): # button is released
+                    draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
+            else: # button is pressed:
+                    draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
+                    
+            if GPIO.input(KEY3_PIN): # button is released
+                    draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
+            else: # button is pressed:
+                    draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
+#init vars 
 curseur = 1
-page=0	
+page=0  
 menu = 1
 ligne = ["","","","","","","",""]
+selection = 0 
 while 1:
-	if GPIO.input(KEY_UP_PIN): # button is released
-		#draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
-		menu = 1
-	else: # button is pressed:
-		#draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
-		curseur = curseur -1
-		if curseur<1:
-			curseur = 1		
+    if GPIO.input(KEY_UP_PIN): # button is released
+        menu = 1
+    else: # button is pressed:
+        curseur = curseur -1
+        if curseur<1:
+            curseur = 7     
+    if GPIO.input(KEY_LEFT_PIN): # button is released
+        menu = 1
+    else: # button is pressed:
+                # back to main menu on Page 0
+        page = 0    
+    if GPIO.input(KEY_RIGHT_PIN): # button is released
+        menu = 1
+    else: # button is pressed:
+        selection = 1
+    if GPIO.input(KEY_DOWN_PIN): # button is released
+        menu = 1
+    else: # button is pressed:
+        curseur = curseur + 1
+        if curseur>7:
+            curseur = 1
+    #if GPIO.input(KEY_PRESS_PIN): # button is released
+        #draw.rectangle((20, 22,40,40), outline=255, fill=0) #center 
+    #else: # button is pressed:
+        #draw.rectangle((20, 22,40,40), outline=255, fill=1) #center filled
 
-	if GPIO.input(KEY_LEFT_PIN): # button is released
-		#draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=0)  #left
-		menu = 1
-	else: # button is pressed:
-		#draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=1)  #left filled
-		page = page - 7
-		if page<0 :
-			page = 0	
-	if GPIO.input(KEY_RIGHT_PIN): # button is released
-		#draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=0) #right
-		menu = 1
-	else: # button is pressed:
-		#draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=1) #right filled
-		page = page +7
-		if page >7:
-			page = 7
-	if GPIO.input(KEY_DOWN_PIN): # button is released
-		#draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
-		menu = 1
-	else: # button is pressed:
-		#draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
-		curseur = curseur + 1
-		if curseur>7:
-			curseur = 7
-	#if GPIO.input(KEY_PRESS_PIN): # button is released
-		#draw.rectangle((20, 22,40,40), outline=255, fill=0) #center 
-	#else: # button is pressed:
-		#draw.rectangle((20, 22,40,40), outline=255, fill=1) #center filled
+    #if GPIO.input(KEY1_PIN): # button is released
+        #draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
+    #else: # button is pressed:
+        #draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
 
-	#if GPIO.input(KEY1_PIN): # button is released
-		#draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
-	#else: # button is pressed:
-		#draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
-
-	#if GPIO.input(KEY2_PIN): # button is released
-		#draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
-	#else: # button is pressed:
-		#draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
-		
-	#if GPIO.input(KEY3_PIN): # button is released
-		#draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
-	#else: # button is pressed:
-		#draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
-	#-----------
-	ligne[1]=switch_menu(page)
-	ligne[2]=switch_menu(page+1)
-	ligne[3]=switch_menu(page+2)
-	ligne[4]=switch_menu(page+3)
-	ligne[5]=switch_menu(page+4)
-	ligne[6]=switch_menu(page+5)
-	ligne[7]=switch_menu(page+6)
-	for n in range(1,8):
-		if page+curseur == page+n:
-			ligne[n] = ligne[n].replace("_",">")
-		else:
-			ligne[n] = ligne[n].replace("_"," ")
-	DisplayText(ligne[1],ligne[2],ligne[3],ligne[4],ligne[5],ligne[6],ligne[7])
-	#console debugger
-	print(page+curseur)
-	time.sleep(0.1)
+    #if GPIO.input(KEY2_PIN): # button is released
+        #draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
+    #else: # button is pressed:
+        #draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
+        
+    #if GPIO.input(KEY3_PIN): # button is released
+        #draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
+    #else: # button is pressed:
+        #draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
+    #-----------
+    if selection == 1:
+        # une option du menu a ete validee on va calculer la page correspondante
+            if page == 7:
+                #system menu
+                if curseur == 1:
+                    sysinfos()
+                if curseur == 2:
+                    brightness = OLEDContrast(brightness)
+                if curseur == 4:
+                    SreenOFF()
+                if curseur == 5:
+                    KeyTest()
+                if curseur == 7:
+                    exit()
+            if page == 0:
+            #on est dans le menu d'origine
+                if curseur == 1:
+                    # call about
+                    about()
+                if curseur == 2:
+                    #system menu 
+                    page = 7
+                    curseur = 1
+                if curseur == 3:
+                #hid attacks menu
+                    page = 14
+                    curseur = 1
+                if curseur == 4:
+                    page = 21
+                    curseur = 1
+                if curseur == 5:
+                    page = 28
+                    curseur = 1
+                if curseur == 6:
+                    page = 35
+                    curseur = 1
+                if curseur == 7:
+                    page = 42
+                    curseur = 1
+                print(page+curseur)
+    ligne[1]=switch_menu(page)
+    ligne[2]=switch_menu(page+1)
+    ligne[3]=switch_menu(page+2)
+    ligne[4]=switch_menu(page+3)
+    ligne[5]=switch_menu(page+4)
+    ligne[6]=switch_menu(page+5)
+    ligne[7]=switch_menu(page+6)
+    #add curser on front on current selected line
+    for n in range(1,8):
+        if page+curseur == page+n:
+            ligne[n] = ligne[n].replace("_",">")
+        else:
+            ligne[n] = ligne[n].replace("_"," ")
+    DisplayText(ligne[1],ligne[2],ligne[3],ligne[4],ligne[5],ligne[6],ligne[7])
+    #print(page+curseur)
+    time.sleep(0.1)
+    selection = 0
 GPIO.cleanup()
