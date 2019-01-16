@@ -2,6 +2,7 @@
 #imports
 from luma.core.interface.serial import i2c, spi
 from luma.core.render import canvas
+from luma.core.sprite_system import framerate_regulator
 from luma.core import lib
 from luma.oled.device import sh1106
 import RPi.GPIO as GPIO
@@ -13,6 +14,10 @@ from PIL import ImageDraw
 from PIL import ImageFont
 import os
 import base64
+#P4wnP1 essential const
+hidpath = "/usr/local/P4wnP1/HIDScripts/"
+sshpath = ":/usr/local/P4wnP1/scripts/"
+
 # Load default font.
 font = ImageFont.load_default()
 # Create blank image for drawing.
@@ -86,13 +91,13 @@ def switch_menu(argument):
         5: "_TEMPLATES FEATURES",
         6: "_USB FEATURES",
         7: "_System information",
-        8: "_OLED contrast",
+        8: "_OLED brightness",
         9: "_",
         10: "_Display OFF",
         11: "_Keys Test",
         12: "_Reboot system",
         13: "_System shutdown",
-        14: "_HID attacks",
+        14: "_RUN HID script",
         15: "_",
         16: "_",
         17: "_",
@@ -194,6 +199,13 @@ def OLEDContrast(contrast):
             device.contrast(contrast)
             draw.text((64, line4), "Value : " + str(contrast),  font=font, fill=255)
     return(contrast)
+def splash():
+    img_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'images', 'bootwhat.bmp'))
+    splash = Image.open(img_path) \
+        .transform((device.width, device.height), Image.AFFINE, (1, 0, 0, 0, 1, 0), Image.BILINEAR) \
+        .convert(device.mode)
+    device.display(splash)
+    time.sleep(5) #5 sec splash boot screen
 def SreenOFF():
     #put screen off until press left
     while GPIO.input(KEY_LEFT_PIN):
@@ -241,12 +253,144 @@ def KeyTest():
                     draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
             else: # button is pressed:
                     draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
+def FileSelect(path,ext):
+    cmd = "ls -F --format=single-column  " + path + "*" + ext
+    listattack=subprocess.check_output(cmd, shell = True )
+    listattack=listattack.replace(ext,"")
+    listattack=listattack.replace(path,"")
+    listattack=listattack.replace("*","")
+    listattack=listattack.split("\n")
+    maxi=len(listattack) #number of records
+    cur=0
+    retour = ""
+    ligne = ["","","","","","","",""]
+    time.sleep(0.5)
+    while GPIO.input(KEY_LEFT_PIN):
+        #on boucle
+        tok=0
+        if maxi < 7:
+            for n in range(0,7):
+                if n<maxi:
+                    ligne[n] = listattack[n]
+                else:
+                    ligne[n] = ""
+        else:
+            if cur+7<maxi:
+                for n in range (cur,cur + 7):
+                    if n == cur:
+                        ligne[tok] = ">"+listattack[n]
+                    else:
+                        ligne[tok] = " "+listattack[n]
+                    tok=tok+1
+            else:
+                for n in range(maxi-8,maxi-1):
+                    if n == cur:
+                        ligne[tok] = ">"+listattack[n]
+                    else:
+                        ligne[tok] = " "+listattack[n]                            
+                    tok=tok+1
+        if GPIO.input(KEY_UP_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            cur = cur -1
+            if cur<0:
+                cur = 0
+        if GPIO.input(KEY_DOWN_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            cur = cur + 1
+            if cur>maxi-2:
+                cur = maxi-2
+        if GPIO.input(KEY_RIGHT_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            retour = listattack[cur]+ext
+            return(retour)
+        #print(str(cur) + " " + listattack[cur])        #debug
+        DisplayText(ligne[0],ligne[1],ligne[2],ligne[3],ligne[4],ligne[5],ligne[6])
+        time.sleep(0.1)
+    return("")
+def runhid():
+    #choose and run (or not) a script
+    fichier = FileSelect(hidpath,".js")
+    time.sleep(0.5)
+    if  fichier == "":
+        return()
+    while GPIO.input(KEY_LEFT_PIN):
+        answer = 0
+        while answer == 0:
+            DisplayText(
+                "                 YES",
+                "",
+                "",
+                fichier,
+                "",
+                "",
+                "                  NO"
+                )
+            if GPIO.input(KEY1_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 1
+            if GPIO.input(KEY3_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 2
+        if answer == 2:
+            return()
+        time.sleep(0.5) #pause 
+        answer = 0
+        while answer ==0:
+            DisplayText(
+                "       Background job",
+                "",
+                "",
+                "Method ?       CANCEL",
+                "",
+                "",
+                "                 RUN"
+                )
+            if GPIO.input(KEY1_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 1
+            if GPIO.input(KEY2_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 2  
+            if GPIO.input(KEY3_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 3
+        if answer == 2:
+            return()
+        DisplayText(
+    "",
+    "",
+    "",
+    "HID Script running...",
+    "",
+    "",
+    ""
+    )
+        if answer == 1:
+            # run as background job P4wnP1_cli hid job command
+            cmd = "P4wnP1_cli hid job " + fichier
+            result=subprocess.check_output(cmd, shell = True )
+            return()
+        if answer == 3:
+            # run hid script directly
+            cmd = "P4wnP1_cli hid run " + fichier
+            result=subprocess.check_output(cmd, shell = True )
+            return()
 #init vars 
 curseur = 1
 page=0  
 menu = 1
 ligne = ["","","","","","","",""]
-selection = 0 
+selection = 0
+splash()
+#print("selected : " + FileSelect(hidpath,".js"))
 while 1:
     if GPIO.input(KEY_UP_PIN): # button is released
         menu = 1
@@ -303,8 +447,13 @@ while 1:
                     KeyTest()
                 if curseur == 7:
                     exit()
+            if page == 14:
+                #HID related menu
+                if curseur == 1:
+                    #run hid script
+                    runhid()
             if page == 0:
-            #on est dans le menu d'origine
+            #we are in main menu
                 if curseur == 1:
                     # call about
                     about()
@@ -343,7 +492,7 @@ while 1:
         else:
             ligne[n] = ligne[n].replace("_"," ")
     DisplayText(ligne[1],ligne[2],ligne[3],ligne[4],ligne[5],ligne[6],ligne[7])
-    #print(page+curseur)
+    #print(page+curseur) #debug trace menu value
     time.sleep(0.1)
     selection = 0
 GPIO.cleanup()
