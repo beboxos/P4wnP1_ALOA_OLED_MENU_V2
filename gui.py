@@ -14,6 +14,7 @@ from PIL import ImageDraw
 from PIL import ImageFont
 import os
 import base64
+GPIO.setwarnings(False)
 #P4wnP1 essential const
 hidpath = "/usr/local/P4wnP1/HIDScripts/"
 sshpath = ":/usr/local/P4wnP1/scripts/"
@@ -118,12 +119,12 @@ def switch_menu(argument):
         32: "_",
         33: "_",
         34: "_",
-        35: "_Template features",
-        36: "_",
-        37: "_",
-        38: "_",
-        39: "_",
-        40: "_",
+        35: "_FULL SETTINGS",
+        36: "_BLUETOOTH",
+        37: "_USB",
+        38: "_WIFI",
+        39: "_TRIGGER ACTIONS",
+        40: "_NETWORK",
         41: "_",
         42: "_USB features",
         43: "_",
@@ -383,6 +384,30 @@ def runhid():
             cmd = "P4wnP1_cli hid run " + fichier
             result=subprocess.check_output(cmd, shell = True )
             return()
+def restart():
+    cmd="python /root/BeBoXGui/runmenu.py &"
+    exe = subprocess.check_output(cmd, shell = True )
+    return()
+def GetTemplateList(type):
+    # get list of template
+    # Possible types : FULL_SETTINGS , BLUETOOTH , USB , WIFI , TRIGGER_ACTIONS , NETWORK
+    cmd = "P4wnP1_cli template list"
+    list = subprocess.check_output(cmd, shell = True )
+    list = list.replace("Templates of type ","") #remove unwanted text
+    list = list.replace(" :","")
+    list = list.replace("------------------------------------\n","")
+    list = list.split("\n")
+    result = ""
+    found = 0
+    for n in range(0,len(list)):
+        if list[n] == type:
+            found = 1
+        if list[n] == "":
+            found = 0
+        if found == 1:
+            result = result + list[n] + "\n"
+    print(result)
+GetTemplateList("BLUETOOTH")    
 #init vars 
 curseur = 1
 page=0  
@@ -445,6 +470,8 @@ while 1:
                     SreenOFF()
                 if curseur == 5:
                     KeyTest()
+                if curseur == 6:
+                    restart()
                 if curseur == 7:
                     exit()
             if page == 14:
