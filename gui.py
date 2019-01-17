@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-#imports
+#imports 
 from luma.core.interface.serial import i2c, spi
 from luma.core.render import canvas
 from luma.core.sprite_system import framerate_regulator
@@ -85,23 +85,23 @@ def DisplayText(l1,l2,l3,l4,l5,l6,l7):
 def switch_menu(argument):
     switcher = {
     0: "_  P4wnP1 A.L.O.A",
-        1: "_SYSTEM COMMANDS",
-        2: "_HID ATTACKS",
-        3: "_WIFI SETTINGS",
+        1: "_SYSTEM RELATED",
+        2: "_HID SCRIPTS",
+        3: "_WIFI THINGS",
         4: "_TRIGGERS FEATURES",
         5: "_TEMPLATES FEATURES",
-        6: "_USB FEATURES",
+        6: "_USB THINGS",
         7: "_System information",
         8: "_OLED brightness",
         9: "_",
         10: "_Display OFF",
         11: "_Keys Test",
-        12: "_Reboot system",
+        12: "_Reboot GUI",
         13: "_System shutdown",
         14: "_RUN HID script",
-        15: "_",
-        16: "_",
-        17: "_",
+        15: "_GAMEPAD",
+        16: "_MOUSE",
+        17: "_Typing Speed",
         18: "_",
         19: "_",
         20: "_",        
@@ -198,7 +198,7 @@ def OLEDContrast(contrast):
                     if contrast<0:
                         contrast = 0
             device.contrast(contrast)
-            draw.text((64, line4), "Value : " + str(contrast),  font=font, fill=255)
+            draw.text((54, line4), "Value : " + str(contrast),  font=font, fill=255)
     return(contrast)
 def splash():
     img_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'images', 'bootwhat.bmp'))
@@ -311,6 +311,61 @@ def FileSelect(path,ext):
         DisplayText(ligne[0],ligne[1],ligne[2],ligne[3],ligne[4],ligne[5],ligne[6])
         time.sleep(0.1)
     return("")
+def templateSelect(liste):
+    # GetTemplateList("BLUETOOTH").split("\n")
+    fichier = GetTemplateList(liste).split("\n")
+    maxi = len(fichier)
+    cur=1
+    retour = ""
+    ligne = ["","","","","","","",""]
+    time.sleep(0.5)
+    while GPIO.input(KEY_LEFT_PIN):
+        #on boucle
+        tok=1
+        if maxi < 8:
+            for n in range(1,8):
+                if n<maxi:
+                    if n == cur:
+                        ligne[n-1] = ">"+fichier[n]
+                    else:
+                        ligne[n-1] = " "+fichier[n]
+                else:
+                    ligne[n-1] = ""
+        else:
+            if cur+7<maxi:
+                for n in range (cur,cur + 7):
+                    if n == cur:
+                        ligne[tok-1] = ">"+fichier[n]
+                    else:
+                        ligne[tok-1] = " "+fichier[n]
+                    tok=tok+1
+            else:
+                for n in range(maxi-8,maxi-1):
+                    if n == cur:
+                        ligne[tok-1] = ">"+fichier[n]
+                    else:
+                        ligne[tok-1] = " "+fichier[n]                            
+                    tok=tok+1
+        if GPIO.input(KEY_UP_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            cur = cur -1
+            if cur<1:
+                cur = 1
+        if GPIO.input(KEY_DOWN_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            cur = cur + 1
+            if cur>maxi-2:
+                cur = maxi-2
+        if GPIO.input(KEY_RIGHT_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            retour = fichier[cur]
+            return(retour)    
+        # ----------
+        DisplayText(ligne[0],ligne[1],ligne[2],ligne[3],ligne[4],ligne[5],ligne[6])
+        time.sleep(0.1)
 def runhid():
     #choose and run (or not) a script
     fichier = FileSelect(hidpath,".js")
@@ -343,13 +398,13 @@ def runhid():
         answer = 0
         while answer ==0:
             DisplayText(
-                "       Background job",
+                "   Run Background job",
                 "",
                 "",
                 "Method ?       CANCEL",
                 "",
                 "",
-                "                 RUN"
+                "       Run direct job"
                 )
             if GPIO.input(KEY1_PIN): # button is released
                 menu = 1
@@ -376,12 +431,12 @@ def runhid():
     )
         if answer == 1:
             # run as background job P4wnP1_cli hid job command
-            cmd = "P4wnP1_cli hid job " + fichier
+            cmd = "P4wnP1_cli hid job '" + fichier+"'"
             result=subprocess.check_output(cmd, shell = True )
             return()
         if answer == 3:
             # run hid script directly
-            cmd = "P4wnP1_cli hid run " + fichier
+            cmd = "P4wnP1_cli hid run '" + fichier+"'"
             result=subprocess.check_output(cmd, shell = True )
             return()
 def restart():
@@ -406,8 +461,160 @@ def GetTemplateList(type):
             found = 0
         if found == 1:
             result = result + list[n] + "\n"
-    print(result)
-GetTemplateList("BLUETOOTH")    
+    return(result)   
+def ApplyTemplate(template,section):
+    while GPIO.input(KEY_LEFT_PIN):
+        answer = 0
+        while answer == 0:
+            DisplayText(
+                "                 YES",
+                "",
+                "",
+                template,
+                "",
+                "",
+                "                  NO"
+                )
+            if GPIO.input(KEY1_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 1
+            if GPIO.input(KEY3_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 2
+        if answer == 2:
+            return()
+        time.sleep(0.5) #pause
+        cmd = "P4wnP1_cli template deploy -" +section + " '"+ template+"'"
+        exe = subprocess.check_output(cmd, shell = True )
+        return()
+def Gamepad():
+    while GPIO.input(KEY_PRESS_PIN):
+        with canvas(device) as draw:
+            if GPIO.input(KEY_UP_PIN): # button is released
+                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
+            else: # button is pressed:
+                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
+                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"UP\")'", shell = True )
+
+            if GPIO.input(KEY_LEFT_PIN): # button is released
+                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=0)  #left
+            else: # button is pressed:
+                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=1)  #left filled
+                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"LEFT\")'", shell = True )
+
+            if GPIO.input(KEY_RIGHT_PIN): # button is released
+                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=0) #right
+            else: # button is pressed:
+                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=1) #right filled
+                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"RIGHT\")'", shell = True )
+
+            if GPIO.input(KEY_DOWN_PIN): # button is released
+                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
+            else: # button is pressed:
+                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
+                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"DOWN\")'", shell = True )
+
+            #if GPIO.input(KEY_PRESS_PIN): # button is released
+            #        draw.rectangle((20, 22,40,40), outline=255, fill=0) #center 
+            #else: # button is pressed:
+            #        draw.rectangle((20, 22,40,40), outline=255, fill=1) #center filled
+            #        exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"ENTER\")'", shell = True )
+
+            if GPIO.input(KEY1_PIN): # button is released
+                    draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
+            else: # button is pressed:
+                    draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
+                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"Q\")'", shell = True )
+
+            if GPIO.input(KEY2_PIN): # button is released
+                    draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
+            else: # button is pressed:
+                    draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
+                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"W\")'", shell = True )
+                    
+            if GPIO.input(KEY3_PIN): # button is released
+                    draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
+            else: # button is pressed:
+                    draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
+                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"E\")'", shell = True )
+def Mouse():
+    bouton1 = 0
+    bouton2 = 0
+    step = 10
+    time.sleep(0.5)
+    while GPIO.input(KEY2_PIN):
+        with canvas(device) as draw:
+            if GPIO.input(KEY_UP_PIN): # button is released
+                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
+            else: # button is pressed:
+                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
+                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped(0,-"+str(step)+")'", shell = True )
+
+            if GPIO.input(KEY_LEFT_PIN): # button is released
+                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=0)  #left
+            else: # button is pressed:
+                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=1)  #left filled
+                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped(-"+str(step)+",0)'", shell = True )
+
+            if GPIO.input(KEY_RIGHT_PIN): # button is released
+                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=0) #right
+            else: # button is pressed:
+                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=1) #right filled
+                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped("+str(step)+",0)'", shell = True )
+
+            if GPIO.input(KEY_DOWN_PIN): # button is released
+                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
+            else: # button is pressed:
+                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
+                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped(0,"+str(step)+")'", shell = True )
+
+            if GPIO.input(KEY_PRESS_PIN): # button is released
+                    draw.rectangle((20, 22,40,40), outline=255, fill=0) #center 
+            else: # button is pressed:
+                    draw.rectangle((20, 22,40,40), outline=255, fill=1) #center filled
+                    if step == 10:
+                        #exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BT1)'", shell = True )
+                        step = 100
+                        time.sleep(0.2)
+                    else:
+                        #exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
+                        step = 10
+                        time.sleep(0.2)
+
+            if GPIO.input(KEY1_PIN): # button is released
+                    draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
+                    #exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
+            else: # button is pressed:
+                    draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
+                    if bouton1 == 0:
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BT1)'", shell = True )
+                        bouton1 = 1
+                        time.sleep(0.2)
+                    else:
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
+                        bouton1 = 0
+                        time.sleep(0.2)
+            #if GPIO.input(KEY2_PIN): # button is released
+            #        draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
+            #else: # button is pressed:
+            #        draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
+            draw.text((64, line4), "Key2 : Exit",  font=font, fill=255)        
+            if GPIO.input(KEY3_PIN): # button is released
+                    draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
+                    #exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
+            else: # button is pressed:
+                    draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
+                    if bouton2 == 0:
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BT2)'", shell = True )
+                        bouton2 = 1
+                        time.sleep(0.2)
+                    else:
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
+                        bouton2 = 0
+                        time.sleep(0.2)
+            #time.sleep(0.1)
 #init vars 
 curseur = 1
 page=0  
@@ -479,6 +686,44 @@ while 1:
                 if curseur == 1:
                     #run hid script
                     runhid()
+                if curseur == 2:
+                    #gamepad
+                    Gamepad()
+                if curseur == 3:
+                    #mouse
+                    Mouse()
+            if page == 35:
+                #template section menu
+                if curseur == 1:
+                    #FULL_SETTINGS
+                    template = templateSelect("FULL_SETTINGS")
+                    if template!="":
+                        ApplyTemplate(template,"f")
+                if curseur == 2:
+                    #BLUETOOTH
+                    template = templateSelect("BLUETOOTH")
+                    if template!="":
+                        ApplyTemplate(template,"b")
+                if curseur == 3:
+                    #USB
+                    template = templateSelect("USB")
+                    if template!="":
+                        ApplyTemplate(template,"u")
+                if curseur == 4:
+                    #WIFI
+                    template = templateSelect("WIFI")
+                    if template!="":
+                        ApplyTemplate(template,"w")
+                if curseur == 5:
+                    #TRIGGER_ACTIONS
+                    template = templateSelect("TRIGGER_ACTIONS")
+                    if template!="":
+                        ApplyTemplate(template,"t")
+                if curseur == 6:
+                    #NETWORK
+                    template = templateSelect("NETWORK")
+                    if template!="":
+                        ApplyTemplate(template,"n")
             if page == 0:
             #we are in main menu
                 if curseur == 1:
