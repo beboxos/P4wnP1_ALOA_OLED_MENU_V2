@@ -101,11 +101,11 @@ def switch_menu(argument):
         14: "_RUN HID script",
         15: "_GAMEPAD",
         16: "_MOUSE",
-        17: "_Typing Speed",
-        18: "_",
+        17: "_Set Typing Speed",
+        18: "_Set Key layout",
         19: "_",
         20: "_",        
-        21: "_WIFI settings",
+        21: "_Scan WIFI AP",
         22: "_",
         23: "_",
         24: "_",
@@ -272,7 +272,10 @@ def FileSelect(path,ext):
         if maxi < 7:
             for n in range(0,7):
                 if n<maxi:
-                    ligne[n] = listattack[n]
+                    if n == cur:
+                        ligne[n] = ">"+listattack[n]
+                    else:
+                        ligne[n] = " "+listattack[n]
                 else:
                     ligne[n] = ""
         else:
@@ -619,6 +622,107 @@ def Mouse():
                         bouton2 = 0
                         time.sleep(0.2)
             #time.sleep(0.1)
+def SetTypingSpeed():
+    time.sleep(0.5) #pause
+    while GPIO.input(KEY_LEFT_PIN):         
+        DisplayText(
+            " Natural typing speed",
+            "",
+            "",
+            "               CANCEL",
+            "",
+            "",
+            "    Fast typing speed"
+            )
+        if GPIO.input(KEY1_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            exe = subprocess.check_output("P4wnP1_cli hid run -c 'typingSpeed(100,150)'", shell = True )
+            time.sleep(0.5) #pause
+            return()
+        if GPIO.input(KEY2_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            time.sleep(0.5) #pause
+            return()
+        if GPIO.input(KEY3_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            exe = subprocess.check_output("P4wnP1_cli hid run -c 'typingSpeed(0,0)'", shell = True )
+            time.sleep(0.5) #pause
+            return()
+    time.sleep(0.5) #pause
+def scanwifi():
+    #list wifi APs
+    cmd ="sudo iwlist wlan0 scan | grep ESSID"
+    SSID=subprocess.check_output(cmd, shell = True )
+    SSID=SSID.replace("                    ESSID:","")
+    SSID=SSID.replace("\"","")
+    ssidlist=SSID.split("\n")
+    cmd ="sudo iwlist wlan0 scan | grep Encryption"
+    Ekey=subprocess.check_output(cmd, shell = True )
+    Ekey=Ekey.replace("                    Encryption ","")
+    Ekeylist=Ekey.split("\n")     
+    for n in range(0,len(ssidlist)):
+        if ssidlist[n]=="":ssidlist[n]="Hidden"
+        ssidlist[n]=ssidlist[n]+" ["+Ekeylist[n]+"]"
+    #----------------------------------------------------------
+    listattack=ssidlist
+    maxi=len(listattack) #number of records
+    cur=0
+    retour = ""
+    ligne = ["","","","","","","",""]
+    time.sleep(0.5)
+    while GPIO.input(KEY_LEFT_PIN):
+        #on boucle
+        tok=0
+        if maxi < 7:
+            for n in range(0,7):
+                if n<maxi:
+                    if n == cur:
+                        ligne[n] = ">"+listattack[n]
+                    else:
+                        ligne[n] = " "+listattack[n]
+                else:
+                    ligne[n] = ""
+        else:
+            if cur+7<maxi:
+                for n in range (cur,cur + 7):
+                    if n == cur:
+                        ligne[tok] = ">"+listattack[n]
+                    else:
+                        ligne[tok] = " "+listattack[n]
+                    tok=tok+1
+            else:
+                for n in range(maxi-8,maxi-1):
+                    if n == cur:
+                        ligne[tok] = ">"+listattack[n]
+                    else:
+                        ligne[tok] = " "+listattack[n]                            
+                    tok=tok+1
+        if GPIO.input(KEY_UP_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            cur = cur -1
+            if cur<0:
+                cur = 0
+        if GPIO.input(KEY_DOWN_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            cur = cur + 1
+            if cur>maxi-2:
+                cur = maxi-2
+        if GPIO.input(KEY_RIGHT_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            retour = listattack[cur]
+            return(retour)
+        #print(str(cur) + " " + listattack[cur])        #debug
+        DisplayText(ligne[0],ligne[1],ligne[2],ligne[3],ligne[4],ligne[5],ligne[6])
+        time.sleep(0.1)
+    return("")
+    
+
 #init vars 
 curseur = 1
 page=0  
@@ -696,6 +800,13 @@ while 1:
                 if curseur == 3:
                     #mouse
                     Mouse()
+                if curseur == 4:
+                    #Set typing speed
+                    SetTypingSpeed()
+            if page == 21:
+                if curseur == 1:
+                    #SSID LIST
+                    scanwifi()
             if page == 35:
                 #template section menu
                 if curseur == 1:
