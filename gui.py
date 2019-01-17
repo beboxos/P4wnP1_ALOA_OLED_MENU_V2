@@ -86,7 +86,7 @@ def switch_menu(argument):
     switcher = {
     0: "_  P4wnP1 A.L.O.A",
         1: "_SYSTEM RELATED",
-        2: "_HID SCRIPTS",
+        2: "_HID MANAGEMENT",
         3: "_WIFI THINGS",
         4: "_TRIGGERS FEATURES",
         5: "_TEMPLATES FEATURES",
