@@ -176,6 +176,7 @@ def sysinfos():
             "USB.: " + str(IP2),
             today_date + " " + today_time
             )
+        time.sleep(0.1)
     #page = 7
 def OLEDContrast(contrast):
     #set contrast 0 to 255
@@ -211,6 +212,7 @@ def SreenOFF():
     #put screen off until press left
     while GPIO.input(KEY_LEFT_PIN):
         device.hide()
+        time.sleep(0.1)
     device.show()
 def KeyTest():
     while GPIO.input(KEY_LEFT_PIN):
