@@ -43,19 +43,19 @@ x = 0
 RST = 25
 CS = 8      
 DC = 24
-USER_I2C = 0
+
 #GPIO define
-RST_PIN        = 25
-CS_PIN         = 8
-DC_PIN         = 24
-KEY_UP_PIN     = 6 
-KEY_DOWN_PIN   = 19
-KEY_LEFT_PIN   = 5
-KEY_RIGHT_PIN  = 26
-KEY_PRESS_PIN  = 13
-KEY1_PIN       = 21
-KEY2_PIN       = 20
-KEY3_PIN       = 16
+RST_PIN        = 25 #waveshare settings
+CS_PIN         = 8  #waveshare settings
+DC_PIN         = 24 #waveshare settings
+KEY_UP_PIN     = 6  #stick up
+KEY_DOWN_PIN   = 19 #stick down
+KEY_LEFT_PIN   = 5  #sitck left
+KEY_RIGHT_PIN  = 26 #stick right
+KEY_PRESS_PIN  = 13 #stick center button
+KEY1_PIN       = 21 #key 1
+KEY2_PIN       = 20 #key 2
+KEY3_PIN       = 16 #key 3
 #init GPIO
 GPIO.setmode(GPIO.BCM) 
 GPIO.setup(KEY_UP_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)    # Input with pull-up
@@ -68,7 +68,17 @@ GPIO.setup(KEY2_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-u
 GPIO.setup(KEY3_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-up
 screensaver = 0
 #SPI
-serial = spi(device=0, port=0, bus_speed_hz = 8000000, transfer_size = 4096, gpio_DC = 24, gpio_RST = 25)
+#serial = spi(device=0, port=0, bus_speed_hz = 8000000, transfer_size = 4096, gpio_DC = 24, gpio_RST = 25)
+USER_I2C = 0 #set to 1 if your oled is I2C
+if  USER_I2C == 1:
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(RST,GPIO.OUT)    
+    GPIO.output(RST,GPIO.HIGH)    
+    serial = i2c(port=1, address=0x3c)
+else:
+    serial = spi(device=0, port=0, bus_speed_hz = 8000000, transfer_size = 4096, gpio_DC = 24, gpio_RST = 25)
+
+
 device = sh1106(serial, rotate=2) #sh1106  
 def DisplayText(l1,l2,l3,l4,l5,l6,l7):
     # simple routine to display 7 lines of text
@@ -82,6 +92,8 @@ def DisplayText(l1,l2,l3,l4,l5,l6,l7):
         draw.text((0, line7), l7, font=font, fill=255)  
 
 #vars
+def shell(cmd):
+    return(subprocess.check_output(cmd, shell = True ))
 def switch_menu(argument):
     switcher = {
     0: "_  P4wnP1 A.L.O.A",
@@ -112,7 +124,7 @@ def switch_menu(argument):
         25: "_",
         26: "_",
         27: "_",
-        28: "_Trigger features",
+        28: "_Send to oled group",
         29: "_",
         30: "_",
         31: "_",
@@ -521,12 +533,6 @@ def Gamepad():
                     draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
                     exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"DOWN\")'", shell = True )
 
-            #if GPIO.input(KEY_PRESS_PIN): # button is released
-            #        draw.rectangle((20, 22,40,40), outline=255, fill=0) #center 
-            #else: # button is pressed:
-            #        draw.rectangle((20, 22,40,40), outline=255, fill=1) #center filled
-            #        exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"ENTER\")'", shell = True )
-
             if GPIO.input(KEY1_PIN): # button is released
                     draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
             else: # button is pressed:
@@ -603,10 +609,6 @@ def Mouse():
                         exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
                         bouton1 = 0
                         time.sleep(0.2)
-            #if GPIO.input(KEY2_PIN): # button is released
-            #        draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
-            #else: # button is pressed:
-            #        draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
             draw.text((64, line4), "Key2 : Exit",  font=font, fill=255)        
             if GPIO.input(KEY3_PIN): # button is released
                     draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
@@ -723,8 +725,60 @@ def scanwifi():
         DisplayText(ligne[0],ligne[1],ligne[2],ligne[3],ligne[4],ligne[5],ligne[6])
         time.sleep(0.1)
     return("")
-    
+def trigger1():
+    while GPIO.input(KEY_PRESS_PIN):
+        with canvas(device) as draw:
+            if GPIO.input(KEY_UP_PIN): # button is released
+                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
+                    draw.text((28, line2+2), "1",  font=font, fill=255)                    
+            else: # button is pressed:
+                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
+                    shell("P4wnP1_cli trigger send -n \"oled\" -v 1")
 
+            if GPIO.input(KEY_LEFT_PIN): # button is released
+                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=0)  #left
+                    draw.text((11, line5-7), "3",  font=font, fill=255)                    
+            else: # button is pressed:
+                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=1)  #left filled
+                    shell("P4wnP1_cli trigger send -n \"oled\" -v 3")
+
+            if GPIO.input(KEY_RIGHT_PIN): # button is released
+                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=0) #right
+                    draw.text((45, line5-7), "4",  font=font, fill=255)                    
+            else: # button is pressed:
+                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=1) #right filled
+                    shell("P4wnP1_cli trigger send -n \"oled\" -v 4")
+
+            if GPIO.input(KEY_DOWN_PIN): # button is released
+                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
+                    draw.text((28, line6+3), "2",  font=font, fill=255)                    
+            else: # button is pressed:
+                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
+                    shell("P4wnP1_cli trigger send -n \"oled\" -v 2")
+                    
+            if GPIO.input(KEY1_PIN): # button is released
+                    draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
+                    draw.text((75, line2), "10",  font=font, fill=255)                    
+            else: # button is pressed:
+                    draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
+                    shell("P4wnP1_cli trigger send -n \"oled\" -v 10")
+
+            if GPIO.input(KEY2_PIN): # button is released
+                    draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
+                    draw.text((105, line5-7), "20",  font=font, fill=255)                    
+            else: # button is pressed:
+                    draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
+                    shell("P4wnP1_cli trigger send -n \"oled\" -v 20")
+                    
+            if GPIO.input(KEY3_PIN): # button is released
+                    draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
+                    draw.text((75, line7-5), "30",  font=font, fill=255)                    
+            else: # button is pressed:
+                    draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
+                    shell("P4wnP1_cli trigger send -n \"oled\" -v 30")
+            draw.text((25, line4+2), "Go",  font=font, fill=255)
+            #time.sleep(0.1)
+            
 #init vars 
 curseur = 1
 page=0  
@@ -755,25 +809,6 @@ while 1:
         curseur = curseur + 1
         if curseur>7:
             curseur = 1
-    #if GPIO.input(KEY_PRESS_PIN): # button is released
-        #draw.rectangle((20, 22,40,40), outline=255, fill=0) #center 
-    #else: # button is pressed:
-        #draw.rectangle((20, 22,40,40), outline=255, fill=1) #center filled
-
-    #if GPIO.input(KEY1_PIN): # button is released
-        #draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
-    #else: # button is pressed:
-        #draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
-
-    #if GPIO.input(KEY2_PIN): # button is released
-        #draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
-    #else: # button is pressed:
-        #draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
-        
-    #if GPIO.input(KEY3_PIN): # button is released
-        #draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
-    #else: # button is pressed:
-        #draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
     #-----------
     if selection == 1:
         # une option du menu a ete validee on va calculer la page correspondante
@@ -809,6 +844,10 @@ while 1:
                 if curseur == 1:
                     #SSID LIST
                     scanwifi()
+            if page == 28:
+                    #trigger section
+                if curseur == 1:
+                    trigger1()
             if page == 35:
                 #template section menu
                 if curseur == 1:
