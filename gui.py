@@ -102,7 +102,7 @@ def switch_menu(argument):
         6: "_INFOSEC TOOLS",
         7: "_System information",
         8: "_OLED brightness",
-        9: "_",
+        9: "_HOST OS detection",
         10: "_Display OFF",
         11: "_Keys Test",
         12: "_Reboot GUI",
@@ -135,7 +135,7 @@ def switch_menu(argument):
         39: "_TRIGGER ACTIONS",
         40: "_NETWORK",
         41: "_",
-        42: "_HOST DETECTION",
+        42: "_Work in Progress",
         43: "_",
         44: "_",
         45: "_",
@@ -187,11 +187,11 @@ def sysinfos():
             )
         time.sleep(0.1)
     #page = 7
-def IdentOS(ip):
+def IdentOS(ips):
     #return os name if found ex. Microsoft Windows 7 ,  Linux 3.X
-    return(shell("nmap -p 22,80,445,65123,56123 -O " + ip + " | grep Running: | cut -d \":\" -f2 | cut -d \"|\" -f1"))
-def OsDetails(ip):
-    return(shell("nmap -p 22,80,445,65123,56123 -O " + ip + " | grep Running: | cut -d \":\" -f2 | cut -d \"|\" -f1"))
+    return(shell("nmap -p 22,80,445,65123,56123 -O " + ips + " | grep Running: | cut -d \":\" -f2 | cut -d \"|\" -f1"))
+def OsDetails(ips):
+    return(shell("nmap -p 22,80,445,65123,56123 -O " + ips + " | grep \"OS details:\" | cut -d \":\" -f2 | cut -d \",\" -f1"))
 def OLEDContrast(contrast):
     #set contrast 0 to 255
     while GPIO.input(KEY_LEFT_PIN):
@@ -780,14 +780,36 @@ def trigger1():
                     shell("P4wnP1_cli trigger send -n \"oled\" -v 30")
             draw.text((25, line4+2), "Go",  font=font, fill=255)
             #time.sleep(0.1)
-            
+def Osdetection():
+    DisplayText(
+            "",
+            "",
+            "",
+            "      PLEASE WAIT",
+            "",
+            "",
+            ""
+            )
+    os=IdentOS("172.16.0.2")
+    detail=OsDetails("172.16.0.2")
+    while GPIO.input(KEY_LEFT_PIN):
+        DisplayText(
+            "Experimental nmap OS",
+            "detection",
+            "",
+            os.replace("Microsoft","MS").replace("Windows","win"),
+            detail.replace("Microsoft","MS").replace("Windows","win"),            
+            "",
+            "Press LEFT to exit"
+            )
+    
 #init vars 
 curseur = 1
 page=0  
 menu = 1
 ligne = ["","","","","","","",""]
 selection = 0
-splash()  # display boot splash image
+splash()  # display boot splash image ---------------------------------------------------------------------
 #print("selected : " + FileSelect(hidpath,".js"))
 while 1:
     if GPIO.input(KEY_UP_PIN): # button is released
@@ -820,6 +842,9 @@ while 1:
                     sysinfos()
                 if curseur == 2:
                     brightness = OLEDContrast(brightness)
+                if curseur == 3:
+                    #os detection
+                    Osdetection()
                 if curseur == 4:
                     SreenOFF()
                 if curseur == 5:
