@@ -78,7 +78,6 @@ if  USER_I2C == 1:
 else:
     serial = spi(device=0, port=0, bus_speed_hz = 8000000, transfer_size = 4096, gpio_DC = 24, gpio_RST = 25)
 
-
 device = sh1106(serial, rotate=2) #sh1106  
 def DisplayText(l1,l2,l3,l4,l5,l6,l7):
     # simple routine to display 7 lines of text
@@ -90,8 +89,6 @@ def DisplayText(l1,l2,l3,l4,l5,l6,l7):
         draw.text((0, line5), l5, font=font, fill=255)
         draw.text((0, line6), l6, font=font, fill=255)
         draw.text((0, line7), l7, font=font, fill=255)  
-
-#vars
 def shell(cmd):
     return(subprocess.check_output(cmd, shell = True ))
 def switch_menu(argument):
@@ -102,7 +99,7 @@ def switch_menu(argument):
         3: "_WIFI THINGS",
         4: "_TRIGGERS FEATURES",
         5: "_TEMPLATES FEATURES",
-        6: "_USB THINGS",
+        6: "_INFOSEC TOOLS",
         7: "_System information",
         8: "_OLED brightness",
         9: "_",
@@ -138,7 +135,7 @@ def switch_menu(argument):
         39: "_TRIGGER ACTIONS",
         40: "_NETWORK",
         41: "_",
-        42: "_USB features",
+        42: "_HOST DETECTION",
         43: "_",
         44: "_",
         45: "_",
@@ -190,6 +187,11 @@ def sysinfos():
             )
         time.sleep(0.1)
     #page = 7
+def IdentOS(ip):
+    #return os name if found ex. Microsoft Windows 7 ,  Linux 3.X
+    return(shell("nmap -p 22,80,445,65123,56123 -O " + ip + " | grep Running: | cut -d \":\" -f2 | cut -d \"|\" -f1"))
+def OsDetails(ip):
+    return(shell("nmap -p 22,80,445,65123,56123 -O " + ip + " | grep Running: | cut -d \":\" -f2 | cut -d \"|\" -f1"))
 def OLEDContrast(contrast):
     #set contrast 0 to 255
     while GPIO.input(KEY_LEFT_PIN):
@@ -785,7 +787,7 @@ page=0
 menu = 1
 ligne = ["","","","","","","",""]
 selection = 0
-splash()
+splash()  # display boot splash image
 #print("selected : " + FileSelect(hidpath,".js"))
 while 1:
     if GPIO.input(KEY_UP_PIN): # button is released
