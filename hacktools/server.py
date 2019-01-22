@@ -31,7 +31,7 @@ def socketAccept():
         conn, addr = s.accept()
         print('[!] Session opened at %s:%s'%(addr[0],addr[1]))
         print('\n')
-        hsotname = conn.recv(1024)
+        hostname = conn.recv(1024)
         menu()
     except socket.error as msg:
         print('Socket Accepting error: ' + str(msg[0]))

@@ -10,10 +10,10 @@ def socketCreate():
         global s
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         host = ''
+        #port = '4444'
+        #if port == '':
+        #    socketCreate()
         port = 4444
-        if port == '':
-            socketCreate()
-        port = int(port)
     except socket.error as msg:
         print('erreur de creation du socket: ' + str(msg[0]))
 def socketBind():
@@ -33,7 +33,9 @@ def socketAccept():
         conn, addr = s.accept()
         print('[!] Session ouverte a %s:%s'%(addr[0],addr[1]))
         print('\n')
-        hsotname = conn.recv(1024)
+        print('wait client')
+        hostname = conn.recv(1024)
+        print(hostname)
         menu()
     except socket.error as msg:
         print('Socket Accepting error: ' + str(msg[0]))

