@@ -6,20 +6,12 @@ on boot partition edit config.txt to set I2C and SPI to active
 in termnial you can type 
 nano /boot/config.txt
 find the section far away down and set : 
-## i2c_arm
-##     Enable the ARM's i2c interface
-##
-##     Default off.
-##
+
 dtparam=i2c_arm=on
 dtparam=i2c1=on
 
 and find and set spi section 
-## spi
-##     Set to "on" to enable the spi interfaces
-##
-##     Default off.
-##
+
 dtparam=spi=on
 
 note : for the waveshare hat i used (and all gui.py is set like this) the inteface is SPI and not I2C
