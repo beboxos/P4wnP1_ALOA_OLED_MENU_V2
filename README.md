@@ -32,3 +32,10 @@ KEY2_PIN       : 20,
 KEY3_PIN       : 16
 
 Remember this menu is in alpha version, not all function are ready 
+
+then to install , run sh install.sh and script will install all the files needed
+
+in P4wnP1 web interface , if you want to menu start at "boot" create a trigger in you default template (by default startup)
+with : when service start => run script sh and choose runmenu.sh
+
+enjoy
