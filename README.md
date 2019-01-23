@@ -21,14 +21,14 @@ USER_I2C = 1 #set to 1 if your oled is I2C
 GPIO 8 keys are default waveshare hat
 
 you can edit to set to your hat if different
-#GPIO define
-KEY_UP_PIN     = 6  #stick up
-KEY_DOWN_PIN   = 19 #stick down
-KEY_LEFT_PIN   = 5  #sitck left
-KEY_RIGHT_PIN  = 26 #stick right
-KEY_PRESS_PIN  = 13 #stick center button
-KEY1_PIN       = 21 #key 1
-KEY2_PIN       = 20 #key 2
-KEY3_PIN       = 16 #key 3
+GPIO
+KEY_UP_PIN     : 6 
+KEY_DOWN_PIN   : 19
+KEY_LEFT_PIN   : 5
+KEY_RIGHT_PIN  : 26
+KEY_PRESS_PIN  : 13
+KEY1_PIN       : 21
+KEY2_PIN       : 20 
+KEY3_PIN       : 16
 
 Remember this menu is in alpha version, not all function are ready 
