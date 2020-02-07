@@ -15,6 +15,32 @@ from PIL import ImageFont
 import socket, sys
 import os
 import base64
+import struct
+import smbus
+
+UPS = 1 # 1 = UPS Lite connected / 0 = No UPS Lite hat
+SCNTYPE = 1 # 1= OLED #2 = TERMINAL MODE BETA TESTS VERSION
+
+def readVoltage(bus):
+        "This function returns as float the voltage from the Raspi UPS Hat via the provided SMBus object"
+        address = 0x36
+        read = bus.read_word_data(address, 2)
+        swapped = struct.unpack("<H", struct.pack(">H", read))[0]
+        voltage = swapped * 1.25 /1000/16
+        return voltage
+
+
+def readCapacity(bus):
+        "This function returns as a float the remaining capacity of the battery connected to the Raspi UPS Hat via the provided SMBus object"
+        address = 0x36
+        read = bus.read_word_data(address, 4)
+        swapped = struct.unpack("<H", struct.pack(">H", read))[0]
+        capacity = swapped/256
+        return capacity
+
+
+bus = smbus.SMBus(1)  # 0 = /dev/i2c-0 (port I2C0), 1 = /dev/i2c-1 (port I2C1)
+
 GPIO.setwarnings(False)
 #P4wnP1 essential const
 hidpath = "/usr/local/P4wnP1/HIDScripts/"
@@ -43,7 +69,7 @@ fichier=""
 # Move left to right keeping track of the current x position for drawing shapes.
 x = 0
 RST = 25
-CS = 8      
+CS = 8
 DC = 24
 
 #GPIO define and OLED configuration
@@ -52,15 +78,15 @@ CS_PIN         = 8  #waveshare settings
 DC_PIN         = 24 #waveshare settings
 KEY_UP_PIN     = 6  #stick up
 KEY_DOWN_PIN   = 19 #stick down
-KEY_LEFT_PIN   = 5  #sitck left // go back
+KEY_LEFT_PIN   = 5 #5  #sitck left // go back
 KEY_RIGHT_PIN  = 26 #stick right // go in // validate
 KEY_PRESS_PIN  = 13 #stick center button
 KEY1_PIN       = 21 #key 1 // up
-KEY2_PIN       = 20 #key 2 // cancel/goback
+KEY2_PIN       = 20  #20 #key 2 // cancel/goback
 KEY3_PIN       = 16 #key 3 // down
 USER_I2C = 0        #set to 1 if your oled is I2C or  0 if use SPI interface
 #init GPIO
-GPIO.setmode(GPIO.BCM) 
+GPIO.setmode(GPIO.BCM)
 GPIO.setup(KEY_UP_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)    # Input with pull-up
 GPIO.setup(KEY_DOWN_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Input with pull-up
 GPIO.setup(KEY_LEFT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Input with pull-up
@@ -72,26 +98,36 @@ GPIO.setup(KEY3_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-u
 screensaver = 0
 #SPI
 #serial = spi(device=0, port=0, bus_speed_hz = 8000000, transfer_size = 4096, gpio_DC = 24, gpio_RST = 25)
-
-if  USER_I2C == 1:
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(RST,GPIO.OUT)    
-    GPIO.output(RST,GPIO.HIGH)    
-    serial = i2c(port=1, address=0x3c)
-else:
-    serial = spi(device=0, port=0, bus_speed_hz = 8000000, transfer_size = 4096, gpio_DC = 24, gpio_RST = 25)
-
-device = sh1106(serial, rotate=2) #sh1106  
+if SCNTYPE == 1:
+    if  USER_I2C == 1:
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(RST,GPIO.OUT)
+        GPIO.output(RST,GPIO.HIGH)
+        serial = i2c(port=1, address=0x3c)
+    else:
+        serial = spi(device=0, port=0, bus_speed_hz = 8000000, transfer_size = 4096, gpio_DC = 24, gpio_RST = 25)
+if SCNTYPE == 1:
+    device = sh1106(serial, rotate=2) #sh1106
 def DisplayText(l1,l2,l3,l4,l5,l6,l7):
     # simple routine to display 7 lines of text
-    with canvas(device) as draw:
-        draw.text((0, line1), l1,  font=font, fill=255)
-        draw.text((0, line2), l2, font=font, fill=255)
-        draw.text((0, line3), l3,  font=font, fill=255)
-        draw.text((0, line4), l4,  font=font, fill=255)
-        draw.text((0, line5), l5, font=font, fill=255)
-        draw.text((0, line6), l6, font=font, fill=255)
-        draw.text((0, line7), l7, font=font, fill=255)  
+    if SCNTYPE == 1:
+        with canvas(device) as draw:
+            draw.text((0, line1), l1,  font=font, fill=255)
+            draw.text((0, line2), l2, font=font, fill=255)
+            draw.text((0, line3), l3,  font=font, fill=255)
+            draw.text((0, line4), l4,  font=font, fill=255)
+            draw.text((0, line5), l5, font=font, fill=255)
+            draw.text((0, line6), l6, font=font, fill=255)
+            draw.text((0, line7), l7, font=font, fill=255)
+    if SCNTYPE == 2:
+            os.system('clear')
+            print(l1)
+            print(l2)
+            print(l3)
+            print(l4)
+            print(l5)
+            print(l6)
+            print(l7)
 def shell(cmd):
     return(subprocess.check_output(cmd, shell = True ))
 def switch_menu(argument):
@@ -99,7 +135,7 @@ def switch_menu(argument):
     0: "_  P4wnP1 A.L.O.A",
         1: "_SYSTEM RELATED",
         2: "_HID MANAGEMENT",
-        3: "_WIFI THINGS",
+        3: "_WIRELESS THINGS",
         4: "_TRIGGERS FEATURES",
         5: "_TEMPLATES FEATURES",
         6: "_INFOSEC TOOLS",
@@ -116,7 +152,7 @@ def switch_menu(argument):
         17: "_Set Typing Speed",
         18: "_Set Key layout",
         19: "_",
-        20: "_",        
+        20: "_",
         21: "_Scan WIFI AP",
         22: "_",
         23: "_",
@@ -144,7 +180,7 @@ def switch_menu(argument):
         45: "_",
         46: "_",
         47: "_",
-        48: "_"         
+        48: "_"
 }
     return switcher.get(argument, "Invalid")
 def about():
@@ -152,7 +188,7 @@ def about():
     DisplayText(
         "  : P4wnP1 A.L.O.A :",
         "P4wnP1 (c) @Mame82",
-        "",
+        "V 1.0",
         "This GUI is developed",
         "       by BeBoX",
         "contact :",
@@ -173,10 +209,21 @@ def sysinfos():
         cmd = "hostname -I"
         IP2 = subprocess.check_output(cmd, shell = True ).split(" ")[1]
         IP3 = subprocess.check_output(cmd, shell = True ).split(" ")[2]
-        cmd = "top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'"
-        CPU = subprocess.check_output(cmd, shell = True )
-        cmd = "free -m | awk 'NR==2{printf \"Mem: %s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'"
-        MemUsage = subprocess.check_output(cmd, shell = True )
+        cmd = "top -bn1 | grep %Cpu | awk '{printf \"%.0f\",$2}'"
+        temp = os.popen("cat /sys/class/thermal/thermal_zone0/temp").readline()
+        temp = int(temp)/1000
+        if UPS == 1:
+            volt = "BAT :%5.2fV " % readVoltage(bus)
+            batt = int(readCapacity(bus))
+        else:
+            volt = "BAT : N/C "
+            batt = "N/C % "
+        if batt>100:
+            batt=100
+        CPU = volt + str(batt) + "% t:" + str(temp)
+        proc = " CPU:" + subprocess.check_output(cmd, shell = True ) + " %"
+        cmd = "free -m | awk 'NR==2{printf \"MEM :%.2f%%\", $3*100/$2 }'"
+        MemUsage = subprocess.check_output(cmd, shell = True ) + proc
         cmd = "df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'"
         Disk = subprocess.check_output(cmd, shell = True )   
         DisplayText(
@@ -197,26 +244,27 @@ def OsDetails(ips):
     return(shell("nmap -p 22,80,445,65123,56123 -O " + ips + " | grep \"OS details:\" | cut -d \":\" -f2 | cut -d \",\" -f1"))
 def OLEDContrast(contrast):
     #set contrast 0 to 255
-    while GPIO.input(KEY_LEFT_PIN):
-        #loop until press left to quit
-        with canvas(device) as draw:
-            if GPIO.input(KEY_UP_PIN): # button is released
-                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
-            else: # button is pressed:
-                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
-                    contrast = contrast +5
-                    if contrast>255:
-                        contrast = 255
+    if SCNTYPE == 1:
+        while GPIO.input(KEY_LEFT_PIN):
+            #loop until press left to quit
+            with canvas(device) as draw:
+                if GPIO.input(KEY_UP_PIN): # button is released
+                        draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
+                else: # button is pressed:
+                        draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
+                        contrast = contrast +5
+                        if contrast>255:
+                            contrast = 255
 
-            if GPIO.input(KEY_DOWN_PIN): # button is released
-                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
-            else: # button is pressed:
-                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
-                    contrast = contrast-5
-                    if contrast<0:
-                        contrast = 0
-            device.contrast(contrast)
-            draw.text((54, line4), "Value : " + str(contrast),  font=font, fill=255)
+                if GPIO.input(KEY_DOWN_PIN): # button is released
+                        draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
+                else: # button is pressed:
+                        draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
+                        contrast = contrast-5
+                        if contrast<0:
+                            contrast = 0
+                device.contrast(contrast)
+                draw.text((54, line4), "Value : " + str(contrast),  font=font, fill=255)
     return(contrast)
 def splash():
     img_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'images', 'bootwhat.bmp'))
@@ -227,52 +275,54 @@ def splash():
     time.sleep(5) #5 sec splash boot screen
 def SreenOFF():
     #put screen off until press left
-    while GPIO.input(KEY_LEFT_PIN):
-        device.hide()
-        time.sleep(0.1)
-    device.show()
+    if SCNTYPE == 1:
+        while GPIO.input(KEY_LEFT_PIN):
+            device.hide()
+            time.sleep(0.1)
+        device.show()
 def KeyTest():
-    while GPIO.input(KEY_LEFT_PIN):
-        with canvas(device) as draw:
-            if GPIO.input(KEY_UP_PIN): # button is released
-                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
-            else: # button is pressed:
-                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
+    if SCNTYPE == 1:
+        while GPIO.input(KEY_LEFT_PIN):
+            with canvas(device) as draw:
+                if GPIO.input(KEY_UP_PIN): # button is released
+                        draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
+                else: # button is pressed:
+                        draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
 
-            if GPIO.input(KEY_LEFT_PIN): # button is released
-                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=0)  #left
-            else: # button is pressed:
-                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=1)  #left filled
+                if GPIO.input(KEY_LEFT_PIN): # button is released
+                        draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=0)  #left
+                else: # button is pressed:
+                        draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=1)  #left filled
 
-            if GPIO.input(KEY_RIGHT_PIN): # button is released
-                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=0) #right
-            else: # button is pressed:
-                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=1) #right filled
+                if GPIO.input(KEY_RIGHT_PIN): # button is released
+                        draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=0) #right
+                else: # button is pressed:
+                        draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=1) #right filled
 
-            if GPIO.input(KEY_DOWN_PIN): # button is released
-                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
-            else: # button is pressed:
-                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
+                if GPIO.input(KEY_DOWN_PIN): # button is released
+                        draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
+                else: # button is pressed:
+                        draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
 
-            if GPIO.input(KEY_PRESS_PIN): # button is released
-                    draw.rectangle((20, 22,40,40), outline=255, fill=0) #center 
-            else: # button is pressed:
-                    draw.rectangle((20, 22,40,40), outline=255, fill=1) #center filled
+                if GPIO.input(KEY_PRESS_PIN): # button is released
+                        draw.rectangle((20, 22,40,40), outline=255, fill=0) #center 
+                else: # button is pressed:
+                        draw.rectangle((20, 22,40,40), outline=255, fill=1) #center filled
 
-            if GPIO.input(KEY1_PIN): # button is released
-                    draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
-            else: # button is pressed:
-                    draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
+                if GPIO.input(KEY1_PIN): # button is released
+                        draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
+                else: # button is pressed:
+                        draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
 
-            if GPIO.input(KEY2_PIN): # button is released
-                    draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
-            else: # button is pressed:
-                    draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
-                    
-            if GPIO.input(KEY3_PIN): # button is released
-                    draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
-            else: # button is pressed:
-                    draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
+                if GPIO.input(KEY2_PIN): # button is released
+                        draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
+                else: # button is pressed:
+                        draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
+                        
+                if GPIO.input(KEY3_PIN): # button is released
+                        draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
+                else: # button is pressed:
+                        draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
 def FileSelect(path,ext):
     cmd = "ls -F --format=single-column  " + path + "*" + ext
     listattack=subprocess.check_output(cmd, shell = True )
@@ -483,6 +533,15 @@ def runhid():
             result=subprocess.check_output(cmd, shell = True )
             return()
 def restart():
+    DisplayText(
+    "",
+    "",
+    "",
+    "PLEASE WAIT ...",
+    "",
+    "",
+    ""
+    )
     cmd="python /root/BeBoXGui/runmenu.py &"
     exe = subprocess.check_output(cmd, shell = True )
     return()
@@ -543,125 +602,127 @@ def ApplyTemplate(template,section):
         exe = subprocess.check_output(cmd, shell = True )
         return()
 def Gamepad():
-    while GPIO.input(KEY_PRESS_PIN):
-        with canvas(device) as draw:
-            if GPIO.input(KEY_UP_PIN): # button is released
-                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
-            else: # button is pressed:
-                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
-                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"UP\")'", shell = True )
+    if SCNTYPE == 1:
+        while GPIO.input(KEY_PRESS_PIN):
+            with canvas(device) as draw:
+                if GPIO.input(KEY_UP_PIN): # button is released
+                        draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
+                else: # button is pressed:
+                        draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"UP\")'", shell = True )
 
-            if GPIO.input(KEY_LEFT_PIN): # button is released
-                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=0)  #left
-            else: # button is pressed:
-                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=1)  #left filled
-                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"LEFT\")'", shell = True )
+                if GPIO.input(KEY_LEFT_PIN): # button is released
+                        draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=0)  #left
+                else: # button is pressed:
+                        draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=1)  #left filled
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"LEFT\")'", shell = True )
 
-            if GPIO.input(KEY_RIGHT_PIN): # button is released
-                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=0) #right
-            else: # button is pressed:
-                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=1) #right filled
-                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"RIGHT\")'", shell = True )
+                if GPIO.input(KEY_RIGHT_PIN): # button is released
+                        draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=0) #right
+                else: # button is pressed:
+                        draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=1) #right filled
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"RIGHT\")'", shell = True )
 
-            if GPIO.input(KEY_DOWN_PIN): # button is released
-                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
-            else: # button is pressed:
-                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
-                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"DOWN\")'", shell = True )
+                if GPIO.input(KEY_DOWN_PIN): # button is released
+                        draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
+                else: # button is pressed:
+                        draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"DOWN\")'", shell = True )
 
-            if GPIO.input(KEY1_PIN): # button is released
-                    draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
-            else: # button is pressed:
-                    draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
-                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"Q\")'", shell = True )
+                if GPIO.input(KEY1_PIN): # button is released
+                        draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
+                else: # button is pressed:
+                        draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"Q\")'", shell = True )
 
-            if GPIO.input(KEY2_PIN): # button is released
-                    draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
-            else: # button is pressed:
-                    draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
-                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"W\")'", shell = True )
-                    
-            if GPIO.input(KEY3_PIN): # button is released
-                    draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
-            else: # button is pressed:
-                    draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
-                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"E\")'", shell = True )
+                if GPIO.input(KEY2_PIN): # button is released
+                        draw.ellipse((100,20,120,40), outline=255, fill=0) #B button
+                else: # button is pressed:
+                        draw.ellipse((100,20,120,40), outline=255, fill=1) #B button filled
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"W\")'", shell = True )
+                        
+                if GPIO.input(KEY3_PIN): # button is released
+                        draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
+                else: # button is pressed:
+                        draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'press(\"E\")'", shell = True )
 def Mouse():
     bouton1 = 0
     bouton2 = 0
     step = 10
     time.sleep(0.5)
-    while GPIO.input(KEY2_PIN):
-        with canvas(device) as draw:
-            if GPIO.input(KEY_UP_PIN): # button is released
-                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
-            else: # button is pressed:
-                    draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
-                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped(0,-"+str(step)+")'", shell = True )
+    if SCNTYPE == 1:
+        while GPIO.input(KEY2_PIN):
+            with canvas(device) as draw:
+                if GPIO.input(KEY_UP_PIN): # button is released
+                        draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=0)  #Up
+                else: # button is pressed:
+                        draw.polygon([(20, 20), (30, 2), (40, 20)], outline=255, fill=1)  #Up filled
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped(0,-"+str(step)+")'", shell = True )
 
-            if GPIO.input(KEY_LEFT_PIN): # button is released
-                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=0)  #left
-            else: # button is pressed:
-                    draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=1)  #left filled
-                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped(-"+str(step)+",0)'", shell = True )
+                if GPIO.input(KEY_LEFT_PIN): # button is released
+                        draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=0)  #left
+                else: # button is pressed:
+                        draw.polygon([(0, 30), (18, 21), (18, 41)], outline=255, fill=1)  #left filled
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped(-"+str(step)+",0)'", shell = True )
 
-            if GPIO.input(KEY_RIGHT_PIN): # button is released
-                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=0) #right
-            else: # button is pressed:
-                    draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=1) #right filled
-                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped("+str(step)+",0)'", shell = True )
+                if GPIO.input(KEY_RIGHT_PIN): # button is released
+                        draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=0) #right
+                else: # button is pressed:
+                        draw.polygon([(60, 30), (42, 21), (42, 41)], outline=255, fill=1) #right filled
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped("+str(step)+",0)'", shell = True )
 
-            if GPIO.input(KEY_DOWN_PIN): # button is released
-                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
-            else: # button is pressed:
-                    draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
-                    exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped(0,"+str(step)+")'", shell = True )
+                if GPIO.input(KEY_DOWN_PIN): # button is released
+                        draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=0) #down
+                else: # button is pressed:
+                        draw.polygon([(30, 60), (40, 42), (20, 42)], outline=255, fill=1) #down filled
+                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'moveStepped(0,"+str(step)+")'", shell = True )
 
-            if GPIO.input(KEY_PRESS_PIN): # button is released
-                    draw.rectangle((20, 22,40,40), outline=255, fill=0) #center 
-            else: # button is pressed:
-                    draw.rectangle((20, 22,40,40), outline=255, fill=1) #center filled
-                    if step == 10:
-                        #exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BT1)'", shell = True )
-                        step = 100
-                        time.sleep(0.2)
-                    else:
+                if GPIO.input(KEY_PRESS_PIN): # button is released
+                        draw.rectangle((20, 22,40,40), outline=255, fill=0) #center 
+                else: # button is pressed:
+                        draw.rectangle((20, 22,40,40), outline=255, fill=1) #center filled
+                        if step == 10:
+                            #exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BT1)'", shell = True )
+                            step = 100
+                            time.sleep(0.2)
+                        else:
+                            #exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
+                            step = 10
+                            time.sleep(0.2)
+
+                if GPIO.input(KEY1_PIN): # button is released
+                        draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
                         #exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
-                        step = 10
-                        time.sleep(0.2)
+                else: # button is pressed:
+                        draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
+                        if bouton1 == 0:
+                            exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BT1)'", shell = True )
+                            bouton1 = 1
+                            time.sleep(0.2)
+                            exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
 
-            if GPIO.input(KEY1_PIN): # button is released
-                    draw.ellipse((70,0,90,20), outline=255, fill=0) #A button
-                    #exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
-            else: # button is pressed:
-                    draw.ellipse((70,0,90,20), outline=255, fill=1) #A button filled
-                    if bouton1 == 0:
-                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BT1)'", shell = True )
-                        bouton1 = 1
-                        time.sleep(0.2)
-                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
+                        else:
+                            exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
+                            bouton1 = 0
+                            time.sleep(0.2)
+                draw.text((64, line4), "Key2 : Exit",  font=font, fill=255)        
+                if GPIO.input(KEY3_PIN): # button is released
+                        draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
+                        #exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
+                else: # button is pressed:
+                        draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
+                        if bouton2 == 0:
+                            exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BT2)'", shell = True )
+                            bouton2 = 1
+                            time.sleep(0.2)
+                            exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
 
-                    else:
-                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
-                        bouton1 = 0
-                        time.sleep(0.2)
-            draw.text((64, line4), "Key2 : Exit",  font=font, fill=255)        
-            if GPIO.input(KEY3_PIN): # button is released
-                    draw.ellipse((70,40,90,60), outline=255, fill=0) #A button
-                    #exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
-            else: # button is pressed:
-                    draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
-                    if bouton2 == 0:
-                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BT2)'", shell = True )
-                        bouton2 = 1
-                        time.sleep(0.2)
-                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
-
-                    else:
-                        exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
-                        bouton2 = 0
-                        time.sleep(0.2)
-            #time.sleep(0.1)
+                        else:
+                            exe = subprocess.check_output("P4wnP1_cli hid run -c 'button(BTNONE)'", shell = True )
+                            bouton2 = 0
+                            time.sleep(0.2)
+                #time.sleep(0.1)
 def SetTypingSpeed():
     time.sleep(0.5) #pause
     while GPIO.input(KEY_LEFT_PIN):         
@@ -704,6 +765,15 @@ def SetTypingSpeed():
             time.sleep(0.5) #pause
             return()
     time.sleep(0.5) #pause
+def ListWifi ():
+    cmd =subprocess.check_output("sudo iwlist wlan0 scan", shell = True )
+    return cmd
+def LwifiExt (word,liste):
+    for n in range(len(liste)):
+        if liste[n].find(word) != -1:
+            rep = liste[n].split(":")
+            return rep[1]
+    return 0
 def scanwifi():
     #list wifi APs
     cmd ="sudo iwlist wlan0 scan | grep ESSID"
@@ -1000,9 +1070,10 @@ page=0
 menu = 1
 ligne = ["","","","","","","",""]
 selection = 0
-splash()  # display boot splash image ---------------------------------------------------------------------
-#print("selected : " + FileSelect(hidpath,".js"))
-device.contrast(2)
+if SCNTYPE == 1:
+    splash()  # display boot splash image ---------------------------------------------------------------------
+    #print("selected : " + FileSelect(hidpath,".js"))
+    device.contrast(2)
 while 1:
     if GPIO.input(KEY_UP_PIN): # button is released
         menu = 1
@@ -1207,7 +1278,13 @@ while 1:
     #add curser on front on current selected line
     for n in range(1,8):
         if page+curseur == page+n:
-            ligne[n] = ligne[n].replace("_",">")
+            if page == 1:
+                if readCapacity(bus) < 16:
+                    ligne[n] = ligne[n].replace("_","!")
+                else:
+                    ligne[n] = ligne[n].replace("_",">")
+            else:
+                ligne[n] = ligne[n].replace("_",">")
         else:
             ligne[n] = ligne[n].replace("_"," ")
     DisplayText(ligne[1],ligne[2],ligne[3],ligne[4],ligne[5],ligne[6],ligne[7])
