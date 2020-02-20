@@ -35,6 +35,10 @@ Remember this menu is in alpha version, not all function are ready
 
 then to install , run sh install.sh and script will install all the files needed
 
+if error with luma , think about install luma core : 
+pip install luma.core
+pip install luma.oled
+
 directly flashable image file available at http://dl.free.fr/j8M68z2JK (OLED and UPS module installed)
 mirror on mega : https://mega.nz/#!ZEkDlSLJ!ZAIxmKVmsGwjK2ICfrWRni7kuFJyMXsg9eTDayQqe_U
 
