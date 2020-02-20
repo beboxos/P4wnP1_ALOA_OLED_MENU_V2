@@ -36,6 +36,7 @@ Remember this menu is in alpha version, not all function are ready
 then to install , run sh install.sh and script will install all the files needed
 
 directly flashable image file available at http://dl.free.fr/j8M68z2JK (OLED and UPS module installed)
+mirror on mega : https://mega.nz/#!ZEkDlSLJ!ZAIxmKVmsGwjK2ICfrWRni7kuFJyMXsg9eTDayQqe_U
 
 
 in P4wnP1 web interface , if you want to menu start at "boot" create a trigger in you default template (by default startup)
