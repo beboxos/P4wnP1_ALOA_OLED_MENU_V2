@@ -42,6 +42,7 @@ pip install luma.oled
 directly flashable image file available at http://dl.free.fr/j8M68z2JK (OLED and UPS module installed)
 mirror on mega : https://mega.nz/#!ZEkDlSLJ!ZAIxmKVmsGwjK2ICfrWRni7kuFJyMXsg9eTDayQqe_U
 
+new 21.02.2020 : https://mega.nz/#!YYtS2S6A!Q5OgMvLUtAM_x7jt7vBTY8Zu8lHdyyPoaLdsipVufWg P4wnP1 v0.1.1 with oled drivers and menu preinstalled
 
 in P4wnP1 web interface , if you want to menu start at "boot" create a trigger in you default template (by default startup)
 with : when service start => run script sh and choose runmenu.sh
