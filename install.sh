@@ -9,8 +9,7 @@ mkdir /root/BeBoXGui/
 echo "Copying files"
 cp *.py /root/BeBoXGui/
 mkdir /root/BeBoXGui/images
-cd images
-cp * root/BeBoXGui/images/
+cp images/* /root/BeBoXGui/images/
 echo "Copying run script in local P4wnP1 script"
 cp scripts/runmenu.sh /usr/local/P4wnP1/scripts/
 echo "All files are ready"
