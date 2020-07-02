@@ -14,9 +14,15 @@ and find and set spi section
 
 dtparam=spi=on
 
+///////
+
 note : for the waveshare hat i used (and all gui.py is set like this) the inteface is SPI and not I2C
 if you have a I2C oled edit gui.py file and set on line 72
 USER_I2C = 1 #set to 1 if your oled is I2C
+
+///////
+
+///////
 
 Note: for spi(gui.py)
 
@@ -26,7 +32,7 @@ Note: for spi(gui.py)
 
 -(if you don't have a ups) set UPS=0
 
-
+////
 
 GPIO 8 keys are default waveshare hat
 
