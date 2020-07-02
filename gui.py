@@ -1138,8 +1138,8 @@ while 1:
                 if curseur == 5:
                     KeyTest()
                 if curseur == 6:
-                    cmd = "reboot"
-                    subprocess.check_output(cmd, shell = True )    
+                    #cmd = "reboot"
+                    #subprocess.check_output(cmd, shell = True )    
                     restart()
                 if curseur == 7:
                     cmd = "poweroff"
