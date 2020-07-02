@@ -19,9 +19,13 @@ if you have a I2C oled edit gui.py file and set on line 72
 USER_I2C = 1 #set to 1 if your oled is I2C
 
 Note: for spi(gui.py)
+
 -comment the "bus = smbus.SMBus(0)  # 0 = /dev/i2c-0 (port I2C0), 1 = /dev/i2c-1 (port I2C1)" line
+
 -set USER_I2C=0
+
 -(if you don't have a ups) set UPS=0
+
 
 
 GPIO 8 keys are default waveshare hat
