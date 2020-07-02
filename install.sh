@@ -1,6 +1,7 @@
 #!/bin/sh 
 echo "Install Luma.core drivers"
-apt install python3.7-dev python3-pip libfreetype6-dev libjpeg-dev
+apt update --fix-missing
+apt install python3.7-dev python3-pip libfreetype6-dev libjpeg-dev -y
 pip3 install --upgrade luma.oled
 pip3 install --upgrade luma.core
 echo "Create directory"
