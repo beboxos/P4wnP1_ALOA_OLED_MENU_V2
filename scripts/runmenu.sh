@@ -1,4 +1,4 @@
 #!/bin/sh 
-python /root/BeBoXGui/runmenu.py &
+python3.7 /root/BeBoXGui/runmenu.py &
 
 
