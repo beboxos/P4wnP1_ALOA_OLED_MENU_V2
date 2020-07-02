@@ -8,7 +8,7 @@ echo "Create directory"
 mkdir /root/BeBoXGui/
 echo "Copying files"
 cp *.py /root/BeBoXGui/
-mkdir /root/BeBoXGui/images
+mkdir /root/BeBoXGui/images/
 cd images
 cp * root/BeBoXGui/images/
 echo "Copying run script in local P4wnP1 script"
