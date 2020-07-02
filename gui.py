@@ -16,10 +16,10 @@ import socket, sys
 import os
 import base64
 import struct
-import smbus
+import smbus2 as smbus
 
 UPS = 1 # 1 = UPS Lite connected / 0 = No UPS Lite hat
-SCNTYPE = 1 # 1= OLED #2 = TERMINAL MODE BETA TESTS VERSION
+SCNTYPE = 1  # 1= OLED #2 = TERMINAL MODE BETA TESTS VERSION
 
 def readVoltage(bus):
         "This function returns as float the voltage from the Raspi UPS Hat via the provided SMBus object"
@@ -38,8 +38,8 @@ def readCapacity(bus):
         capacity = swapped/256
         return capacity
 
-
-bus = smbus.SMBus(1)  # 0 = /dev/i2c-0 (port I2C0), 1 = /dev/i2c-1 (port I2C1)
+#not needed if you are using spi(like me -fuocoman)
+bus = smbus.SMBus(0)  # 0 = /dev/i2c-0 (port I2C0), 1 = /dev/i2c-1 (port I2C1)
 
 GPIO.setwarnings(False)
 #P4wnP1 essential const
@@ -84,7 +84,7 @@ KEY_PRESS_PIN  = 13 #stick center button
 KEY1_PIN       = 21 #key 1 // up
 KEY2_PIN       = 20  #20 #key 2 // cancel/goback
 KEY3_PIN       = 16 #key 3 // down
-USER_I2C = 0        #set to 1 if your oled is I2C or  0 if use SPI interface
+USER_I2C = 1      #set to 1 if your oled is I2C or  0 if use SPI interface
 #init GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(KEY_UP_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)    # Input with pull-up
@@ -204,11 +204,11 @@ def sysinfos():
         now = datetime.datetime.now()
         today_time = now.strftime("%H:%M:%S")
         today_date = now.strftime("%d %b %y")
-        cmd = "hostname -I | cut -d\' \' -f1"
-        IP = subprocess.check_output(cmd, shell = True )
         cmd = "hostname -I"
-        IP2 = subprocess.check_output(cmd, shell = True ).split(" ")[1]
-        IP3 = subprocess.check_output(cmd, shell = True ).split(" ")[2]
+        qui = str(subprocess.check_output(cmd, shell = True ))
+        IP = qui.split(" ")[0]
+        IP2 = qui.split(" ")[1]
+        IP3 = qui.split(" ")[2]
         cmd = "top -bn1 | grep %Cpu | awk '{printf \"%.0f\",$2}'"
         temp = os.popen("cat /sys/class/thermal/thermal_zone0/temp").readline()
         temp = int(temp)/1000
@@ -217,20 +217,26 @@ def sysinfos():
             batt = int(readCapacity(bus))
         else:
             volt = "BAT : N/C "
-            batt = "N/C % "
+            batt = 0
         if batt>100:
             batt=100
-        CPU = volt + str(batt) + "% t:" + str(temp)
-        proc = " CPU:" + subprocess.check_output(cmd, shell = True ) + " %"
+        BATT = volt + str(batt) + "% t:" + str(temp)
+        #print(str(subprocess.check_output(cmd, shell = True )))
+        proc = "CPU:" + str(subprocess.check_output(cmd, shell = True )).split("'")[1] + "%"
+        cmd = " cat /sys/class/thermal/thermal_zone0/temp "
+        cpuTemp = str(subprocess.check_output(cmd, shell = True )).split("'")[1].split("\\")[0]
+        cpuTemp = str(int(cpuTemp)/1000)
+        proc += " Temp: " + cpuTemp
         cmd = "free -m | awk 'NR==2{printf \"MEM :%.2f%%\", $3*100/$2 }'"
-        MemUsage = subprocess.check_output(cmd, shell = True ) + proc
+        MemUsage = str(subprocess.check_output(cmd, shell = True )).split("'")[1] # + proc
         cmd = "df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'"
-        Disk = subprocess.check_output(cmd, shell = True )   
+        Disk = str(subprocess.check_output(cmd, shell = True )).split("'")[1]   
         DisplayText(
-            "WIFI: " + str(IP),
-            str(CPU),
+            "WIFI: " + IP.split("'")[1],
+            #str(BATT)
+            str(proc),
             str(MemUsage),
-            str(Disk),
+            Disk,
             "BTH.: " + str(IP3),
             "USB.: " + str(IP2),
             today_date + " " + today_time
@@ -325,11 +331,13 @@ def KeyTest():
                         draw.ellipse((70,40,90,60), outline=255, fill=1) #A button filled
 def FileSelect(path,ext):
     cmd = "ls -F --format=single-column  " + path + "*" + ext
-    listattack=subprocess.check_output(cmd, shell = True )
+    listattack=str(subprocess.check_output(cmd, shell = True )).split("'")[1]
     listattack=listattack.replace(ext,"")
     listattack=listattack.replace(path,"")
     listattack=listattack.replace("*","")
-    listattack=listattack.split("\n")
+    listattack=listattack.replace("\\n","\\")
+    listattack=listattack.split("\\")
+    print(listattack)
     maxi=len(listattack) #number of records
     cur=0
     retour = ""
@@ -549,11 +557,11 @@ def GetTemplateList(type):
     # get list of template
     # Possible types : FULL_SETTINGS , BLUETOOTH , USB , WIFI , TRIGGER_ACTIONS , NETWORK
     cmd = "P4wnP1_cli template list"
-    list = subprocess.check_output(cmd, shell = True )
-    list = list.replace("Templates of type ","") #remove unwanted text
+    list = str(subprocess.check_output(cmd, shell = True ))
+    list = list.replace("Templates of type ","") #remove uwanted text
     list = list.replace(" :","")
     list = list.replace("------------------------------------\n","")
-    list = list.split("\n")
+    list = list.split("\\n")
     result = ""
     found = 0
     for n in range(0,len(list)):
@@ -598,7 +606,7 @@ def ApplyTemplate(template,section):
         if answer == 2:
             return()
         time.sleep(0.5) #pause
-        cmd = "P4wnP1_cli template deploy -" +section + " '"+ template+"'"
+        cmd = "P4wnP1_cli template deploy -" +section + " "+ template+""
         exe = subprocess.check_output(cmd, shell = True )
         return()
 def Gamepad():
@@ -777,14 +785,14 @@ def LwifiExt (word,liste):
 def scanwifi():
     #list wifi APs
     cmd ="sudo iwlist wlan0 scan | grep ESSID"
-    SSID=subprocess.check_output(cmd, shell = True )
+    SSID=str(subprocess.check_output(cmd, shell = True )).split("'")[1]
     SSID=SSID.replace("                    ESSID:","")
     SSID=SSID.replace("\"","")
-    ssidlist=SSID.split("\n")
+    ssidlist=SSID.split("\\n")
     cmd ="sudo iwlist wlan0 scan | grep Encryption"
-    Ekey=subprocess.check_output(cmd, shell = True )
+    Ekey=str(subprocess.check_output(cmd, shell = True )).split("'")[1]
     Ekey=Ekey.replace("                    Encryption ","")
-    Ekeylist=Ekey.split("\n")     
+    Ekeylist=Ekey.split("\\n")     
     for n in range(0,len(ssidlist)):
         if ssidlist[n]=="":ssidlist[n]="Hidden"
         ssidlist[n]=ssidlist[n]+" ["+Ekeylist[n]+"]"
@@ -838,6 +846,8 @@ def scanwifi():
             menu = 1
         else: # button is pressed:
             retour = listattack[cur]
+            DisplayText(" TOBE IMPLEMENTED (WIFI)","","","","","","")
+            time.sleep(2)
             return(retour)
         #print(str(cur) + " " + listattack[cur])        #debug
         DisplayText(ligne[0],ligne[1],ligne[2],ligne[3],ligne[4],ligne[5],ligne[6])
@@ -907,7 +917,21 @@ def Osdetection():
             ""
             )
     os=IdentOS("172.16.0.2")
+    if(str(os)=="b''"):
+        while GPIO.input(KEY_LEFT_PIN):     
+            DisplayText(
+                "Experimental nmap OS",
+                "detection",
+                "",
+                "Too many fingerprints match this host",
+                "Maybe it's winzoz :>",
+                "",
+                "Press LEFT to exit"
+                )
+        return
+    
     detail=OsDetails("172.16.0.2")
+
     while GPIO.input(KEY_LEFT_PIN):
         DisplayText(
             "Experimental nmap OS",
@@ -1071,6 +1095,7 @@ menu = 1
 ligne = ["","","","","","","",""]
 selection = 0
 if SCNTYPE == 1:
+    print("sctype")
     splash()  # display boot splash image ---------------------------------------------------------------------
     #print("selected : " + FileSelect(hidpath,".js"))
     device.contrast(2)
@@ -1113,8 +1138,12 @@ while 1:
                 if curseur == 5:
                     KeyTest()
                 if curseur == 6:
+                    #cmd = "reboot"
+                    #subprocess.check_output(cmd, shell = True )    
                     restart()
                 if curseur == 7:
+                    cmd = "poweroff"
+                    subprocess.check_output(cmd, shell = True )    
                     exit()
             if page == 14:
                 #HID related menu

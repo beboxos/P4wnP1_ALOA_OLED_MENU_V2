@@ -1,17 +1,18 @@
 #!/bin/sh 
 echo "Install Luma.core drivers"
-apt-get install python-dev python-pip libfreetype6-dev libjpeg-dev
-pip install --upgrade pip
-apt-get purge python-pip
-pip install --upgrade luma.oled
+apt update --fix-missing
+apt install python3.7-dev python3-pip libfreetype6-dev libjpeg-dev -y
+pip3 install --upgrade luma.oled
+pip3 install --upgrade luma.core
 echo "Create directory"
 mkdir /root/BeBoXGui/
 echo "Copying files"
 cp *.py /root/BeBoXGui/
-mkdir /root/BeBoXGui/images
+mkdir /root/BeBoXGui/images/
 cd images
-cp * root/BeBoXGui/images/
+cp * /root/BeBoXGui/images/
 echo "Copying run script in local P4wnP1 script"
+cd ..
 cp scripts/runmenu.sh /usr/local/P4wnP1/scripts/
 echo "All files are ready"
 echo "to run with P4wnP1 boot"
